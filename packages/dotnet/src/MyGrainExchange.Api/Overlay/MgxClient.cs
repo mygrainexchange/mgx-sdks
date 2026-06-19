@@ -128,14 +128,14 @@ namespace MyGrainExchange.Api.Overlay
                 return Pagination.PaginateAsync(
                     (offset, ct) => _c.CallAsync(() => _c._inventoryApi.InventoryListAsync(
                         f.Commodity, f.Grade, f.MinQuantity, f.MaxQuantity, f.Province, f.Near,
-                        f.CropYear, f.IsOrganic, f.MinProtein, f.Sort, f.Limit, offset, ct), ct),
+                        f.CropYear, f.IsOrganic, f.MinProtein, f.Sort, f.Limit, offset, cancellationToken: ct), ct),
                     page => (IReadOnlyList<Inventory>)page.Items,
                     page => page.Next,
                     cancellationToken);
             }
 
             public Task<Inventory> GetAsync(string id, CancellationToken cancellationToken = default) =>
-                _c.CallAsync(async () => (await _c._inventoryApi.InventoryGetAsync(id, cancellationToken)).Data, cancellationToken);
+                _c.CallAsync(async () => (await _c._inventoryApi.InventoryGetAsync(id, cancellationToken: cancellationToken)).Data, cancellationToken);
 
             /// <summary>Returns the available filter values (commodities, grades, provinces, crop years).</summary>
             public Task<InventoryFilters> FiltersAsync(CancellationToken cancellationToken = default) =>
@@ -154,13 +154,13 @@ namespace MyGrainExchange.Api.Overlay
             internal MarketResource(MgxClient c) => _c = c;
 
             public Task<List<MarketCommodity>> CommoditiesAsync(CancellationToken cancellationToken = default) =>
-                _c.CallAsync(async () => (await _c._marketApi.MarketCommoditiesAsync(cancellationToken)).Items ?? new List<MarketCommodity>(), cancellationToken);
+                _c.CallAsync(async () => (await _c._marketApi.MarketCommoditiesAsync(cancellationToken: cancellationToken)).Items ?? new List<MarketCommodity>(), cancellationToken);
 
             public Task<List<MarketPrice>> PricesAsync(string commodity = null, DateOnly? date = null, CancellationToken cancellationToken = default) =>
-                _c.CallAsync(async () => (await _c._marketApi.MarketPricesAsync(commodity, date, cancellationToken)).Items ?? new List<MarketPrice>(), cancellationToken);
+                _c.CallAsync(async () => (await _c._marketApi.MarketPricesAsync(commodity, date, cancellationToken: cancellationToken)).Items ?? new List<MarketPrice>(), cancellationToken);
 
             public Task<PriceHistory> HistoryAsync(string commodity, DateOnly? from = null, DateOnly? to = null, string interval = null, CancellationToken cancellationToken = default) =>
-                _c.CallAsync(() => _c._marketApi.MarketHistoryAsync(commodity, from, to, interval, cancellationToken), cancellationToken);
+                _c.CallAsync(() => _c._marketApi.MarketHistoryAsync(commodity, from, to, interval, cancellationToken: cancellationToken), cancellationToken);
         }
 
         // ---- Resource: Bids ------------------------------------------------------
@@ -172,13 +172,13 @@ namespace MyGrainExchange.Api.Overlay
 
             public IAsyncEnumerable<Bid> ListAsync(string status = null, int? limit = null, CancellationToken cancellationToken = default) =>
                 Pagination.PaginateAsync(
-                    (offset, ct) => _c.CallAsync(() => _c._bidsApi.BidListAsync(status, limit, offset, ct), ct),
+                    (offset, ct) => _c.CallAsync(() => _c._bidsApi.BidListAsync(status, limit, offset, cancellationToken: ct), ct),
                     page => (IReadOnlyList<Bid>)page.Items,
                     page => page.Next,
                     cancellationToken);
 
             public Task<Bid> GetAsync(string id, CancellationToken cancellationToken = default) =>
-                _c.CallAsync(async () => (await _c._bidsApi.BidGetAsync(id, cancellationToken)).Data, cancellationToken);
+                _c.CallAsync(async () => (await _c._bidsApi.BidGetAsync(id, cancellationToken: cancellationToken)).Data, cancellationToken);
 
             public Task<Trade> AcceptAsync(string id, CancellationToken cancellationToken = default) =>
                 _c.CallAsync(async () => (await _c._bidsApi.BidAcceptAsync(id, cancellationToken)).Data, cancellationToken);
@@ -199,13 +199,13 @@ namespace MyGrainExchange.Api.Overlay
 
             public IAsyncEnumerable<Trade> ListAsync(string status = null, string commodity = null, DateOnly? from = null, DateOnly? to = null, int? limit = null, CancellationToken cancellationToken = default) =>
                 Pagination.PaginateAsync(
-                    (offset, ct) => _c.CallAsync(() => _c._tradesApi.TradeListAsync(status, commodity, from, to, limit, offset, ct), ct),
+                    (offset, ct) => _c.CallAsync(() => _c._tradesApi.TradeListAsync(status, commodity, from, to, limit, offset, cancellationToken: ct), ct),
                     page => (IReadOnlyList<Trade>)page.Items,
                     page => page.Next,
                     cancellationToken);
 
             public Task<Trade> GetAsync(string id, CancellationToken cancellationToken = default) =>
-                _c.CallAsync(async () => (await _c._tradesApi.TradeGetAsync(id, cancellationToken)).Data, cancellationToken);
+                _c.CallAsync(async () => (await _c._tradesApi.TradeGetAsync(id, cancellationToken: cancellationToken)).Data, cancellationToken);
         }
 
         // ---- Resource: Teams -----------------------------------------------------
@@ -231,7 +231,7 @@ namespace MyGrainExchange.Api.Overlay
 
             public IAsyncEnumerable<CashBid> ListAsync(bool? isActive = null, string commodity = null, int? limit = null, CancellationToken cancellationToken = default) =>
                 Pagination.PaginateAsync(
-                    (offset, ct) => _c.CallAsync(() => _c._cashBidsApi.CashBidListAsync(isActive, commodity, limit, offset, ct), ct),
+                    (offset, ct) => _c.CallAsync(() => _c._cashBidsApi.CashBidListAsync(isActive, commodity, limit, offset, cancellationToken: ct), ct),
                     page => (IReadOnlyList<CashBid>)page.Items,
                     page => page.Next,
                     cancellationToken);

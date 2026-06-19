@@ -45,6 +45,11 @@ jobs:
           python -m pip install -e .
           MGX_MOCK_URL=http://127.0.0.1:4010 python test/contract_smoke.py
 
+      - name: Setup PHP 8.4
+        if: matrix.package == 'php'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
       - name: PHP SDK
         if: matrix.package == 'php'
         working-directory: packages/php
