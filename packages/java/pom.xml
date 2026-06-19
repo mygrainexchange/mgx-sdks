@@ -1,38 +1,51 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.mygrainexchange</groupId>
+    <groupId>io.github.mygrainexchange</groupId>
     <artifactId>mgx-sdk</artifactId>
     <packaging>jar</packaging>
     <name>mgx-sdk</name>
     <version>1.0.0</version>
-    <url>https://github.com/openapitools/openapi-generator</url>
-    <description>OpenAPI Java</description>
+    <url>https://github.com/mygrainexchange/mgx-sdks</url>
+    <description>Official Java client for the MGX Enterprise API.</description>
     <scm>
-        <connection>scm:git:git@github.com:openapitools/openapi-generator.git</connection>
-        <developerConnection>scm:git:git@github.com:openapitools/openapi-generator.git</developerConnection>
-        <url>https://github.com/openapitools/openapi-generator</url>
+        <connection>scm:git:git@github.com:mygrainexchange/mgx-sdks.git</connection>
+        <developerConnection>scm:git:git@github.com:mygrainexchange/mgx-sdks.git</developerConnection>
+        <url>https://github.com/mygrainexchange/mgx-sdks</url>
     </scm>
 
     <licenses>
         <license>
-            <name>Unlicense</name>
-            <url>http://unlicense.org</url>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
 
     <developers>
         <developer>
-            <name>OpenAPI-Generator Contributors</name>
-            <email>team@openapitools.org</email>
-            <organization>OpenAPITools.org</organization>
-            <organizationUrl>http://openapitools.org</organizationUrl>
+            <name>My Grain Exchange</name>
+            <email>developers@mygrainexchange.com</email>
+            <organization>My Grain Exchange</organization>
+            <organizationUrl>https://mygrainexchange.com</organizationUrl>
         </developer>
     </developers>
 
     <build>
         <plugins>
+            <!-- Sonatype Central Portal publishing (io.github.mygrainexchange namespace).
+                 `mvn deploy` uploads + auto-publishes; auth is the `central` server. -->
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.7.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                    <autoPublish>true</autoPublish>
+                    <waitUntil>validated</waitUntil>
+                </configuration>
+            </plugin>
            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -249,6 +262,13 @@
                                 <goals>
                                     <goal>sign</goal>
                                 </goals>
+                                <configuration>
+                                    <!-- Non-interactive signing in CI. -->
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

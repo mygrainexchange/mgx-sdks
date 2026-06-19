@@ -17,10 +17,10 @@ Add only the ones you're ready to use; the rest are skipped.
 | Registry | Package | Secret(s) | Where to get it |
 | --- | --- | --- | --- |
 | **npm** | `@mygrainexchange/sdk` | `NPM_TOKEN` | npmjs.com → Access Tokens → **Automation** token (publish to the `@mygrainexchange` org) |
-| **PyPI** | `mgx` | `PYPI_TOKEN` | pypi.org → Account → API tokens (scope it to the `mgx` project) |
-| **NuGet** | `MyGrainExchange.Api` | `NUGET_API_KEY` | nuget.org → API Keys → push scope |
+| **PyPI** | `mgx` | *(none — OIDC)* | **Trusted publishing**, no token. Add a GitHub publisher on PyPI: project `mgx`, owner `mygrainexchange`, repo `mgx-sdks`, workflow `release.yml`, environment `pypi`. Create a matching GitHub **Environment** named `pypi` (repo → Settings → Environments). |
+| **NuGet** | `MyGrainExchange.Api` | *(none — OIDC)* | **Trusted publishing**, no key. On nuget.org create a trusted-publishing policy (owner `mygrainexchange`, repo `mgx-sdks`, workflow `release.yml`). Add a repo **Variable** `NUGET_USER` = your nuget.org username, and a GitHub **Environment** named `nuget`. |
 | **Packagist** | `mygrainexchange/mgx-php` | `PACKAGIST_TOKEN` | packagist.org → Profile → Show API Token (and register the package once, below) |
-| **Maven Central** | `com.mygrainexchange:mgx-sdk` | `OSSRH_USERNAME`, `OSSRH_PASSWORD`, `MAVEN_GPG_KEY`, `MAVEN_GPG_PASSPHRASE` | Sonatype Central account + a GPG key (most setup — see below) |
+| **Maven Central** | `io.github.mygrainexchange:mgx-sdk` | `OSSRH_USERNAME`, `OSSRH_PASSWORD`, `MAVEN_GPG_KEY`, `MAVEN_GPG_PASSPHRASE` | Sonatype **Central Portal** token (server id `central`) + a GPG key. Namespace `io.github.mygrainexchange` (GitHub-verified). Publishes via `central-publishing-maven-plugin` in the pom. |
 
 ### Packagist (one-time)
 Submit the repo once at packagist.org/packages/submit (URL
@@ -29,17 +29,22 @@ API ping tells Packagist to re-read tags. Packagist serves the `packages/php`
 package straight from the Git tag — no artifact upload.
 
 ### Maven Central (most involved)
-Maven Central requires a verified Sonatype namespace for `com.mygrainexchange`
-**and** GPG-signed artifacts. Until that's set up, the `maven` job soft-fails
-(`continue-on-error`) and never blocks the other four registries. To enable it:
-1. Create a Sonatype Central account and verify the `com.mygrainexchange` namespace.
-2. Generate a GPG key; add the public key to a keyserver.
-3. Add `OSSRH_USERNAME` / `OSSRH_PASSWORD`, the armored private key as `MAVEN_GPG_KEY`,
-   and its passphrase as `MAVEN_GPG_PASSPHRASE`.
-4. Add a `<distributionManagement>` block (server id `ossrh`) to `packages/java/pom.xml`.
+Publishes to the Sonatype **Central Portal** under the GitHub-verified namespace
+`io.github.mygrainexchange`, via the `central-publishing-maven-plugin` already wired
+into `packages/java/pom.xml` (server id `central`; `.github/maven-settings.xml` reads
+the token from env). The `maven` job soft-fails (`continue-on-error`) so it never
+blocks the other registries. To enable it, add four secrets:
+1. **`OSSRH_USERNAME` / `OSSRH_PASSWORD`** — a Central Portal **user token** (Portal →
+   account → Generate User Token). *Not* your login password. ✅ done
+2. **`MAVEN_GPG_KEY`** — armored private key: `gpg --armor --export-secret-keys <KEYID>`
+   (and publish the public key: `gpg --keyserver keyserver.ubuntu.com --send-keys <KEYID>`).
+3. **`MAVEN_GPG_PASSPHRASE`** — that key's passphrase.
+
+The release job imports the key and runs `mvn -P sign-artifacts deploy`, which signs,
+uploads, and (with `autoPublish`) releases once Central validates.
 
 > Simpler alternative: publish the Java package to **GitHub Packages** instead of
-> Maven Central (no Sonatype/GPG). Ask and we'll switch the `maven` job over.
+> the Central Portal (no GPG). Ask and we'll switch the `maven` job over.
 
 ## 2. Cut a release
 

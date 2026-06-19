@@ -6,3 +6,5 @@ examples/**
 /CHANGELOG.md
 # The Java overlay lives in the Maven source tree so the generated pom compiles it.
 src/main/java/com/mygrainexchange/mgx/overlay/**
+# pom is hand-owned: Central Portal publishing config + io.github groupId + real metadata.
+/pom.xml
