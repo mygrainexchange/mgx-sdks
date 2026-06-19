@@ -1,0 +1,25 @@
+{
+  "name": "@mygrainexchange/sdk",
+  "version": "1.0.0",
+  "description": "Official TypeScript/Node client for the MGX Enterprise API.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mygrainexchange/mgx-sdks.git",
+    "directory": "packages/node"
+  },
+  "homepage": "https://developers.mygrainexchange.com",
+  "main": "./dist/overlay/index.js",
+  "types": "./dist/overlay/index.d.ts",
+  "files": ["dist", "src", "overlay"],
+  "sideEffects": false,
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  }
+}

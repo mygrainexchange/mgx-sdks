@@ -1,0 +1,3374 @@
+openapi: 3.0.3
+info:
+  contact:
+    name: MGX Developer Support
+    url: https://developers.mygrainexchange.com
+  description: "Public REST API for grain elevators and enterprise buyers. Browse\
+    \ anonymized inventory, place bids, read your team's trades and bids, manage cash\
+    \ bids, subscribe to webhooks, and read market prices. Authenticate with OAuth2\
+    \ (Login with MGX). Seller identity is never exposed until a trade is paid on\
+    \ both sides."
+  title: MGX Enterprise API
+  version: 1.0.0
+servers:
+- description: Production
+  url: https://api.mygrainexchange.com/v1
+- description: Local (Herd)
+  url: https://dashboard.mgx.test/v1
+security:
+- oauth2:
+  - inventory.read
+tags:
+- description: Browse and filter anonymized grain listings.
+  name: Inventory
+- description: "Commodity reference data, current and historical prices."
+  name: Market
+- description: "Place bids, read your team's bids, and act on counter-offers."
+  name: Bids
+- description: Read your team's own completed trades.
+  name: Trades
+- description: Read the teams the authenticated user belongs to.
+  name: Teams
+- description: Manage the elevator's own cash bids and their offers.
+  name: Cash Bids
+- description: Subscribe to event notifications and inspect deliveries.
+  name: Webhooks
+paths:
+  /inventory:
+    get:
+      description: "Returns a paged, anonymized list of grain listings. Seller identity,\
+        \ farm name, and exact coordinates are never included."
+      operationId: inventoryList
+      parameters:
+      - description: "Commodity slug(s), comma-separated, e.g. wheat,canola."
+        explode: true
+        in: query
+        name: commodity
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: "Grade code, e.g. 1CWRS."
+        explode: true
+        in: query
+        name: grade
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Minimum tonnes (MT). Interpreted in `?units=` (default MT).
+        explode: true
+        in: query
+        name: min_quantity
+        required: false
+        schema:
+          type: number
+        style: form
+      - description: Maximum tonnes (MT). Interpreted in `?units=` (default MT).
+        explode: true
+        in: query
+        name: max_quantity
+        required: false
+        schema:
+          type: number
+        style: form
+      - description: "Coarse location filter, e.g. SK, AB."
+        explode: true
+        in: query
+        name: province
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: "lat,lng,radius_km — radius search against coarse city centroids."
+        explode: true
+        in: query
+        name: near
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: crop_year
+        required: false
+        schema:
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: is_organic
+        required: false
+        schema:
+          type: boolean
+        style: form
+      - explode: true
+        in: query
+        name: min_protein
+        required: false
+        schema:
+          type: number
+        style: form
+      - explode: true
+        in: query
+        name: sort
+        required: false
+        schema:
+          enum:
+          - price
+          - -price
+          - quantity
+          - -quantity
+          - listed_at
+          - -listed_at
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 20
+          maximum: 50
+          minimum: 1
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          default: 0
+          minimum: 0
+          type: integer
+        style: form
+      - description: "Unit for quantity values (and price values on market endpoints):\
+          \ mt (default), t = US short ton, bu = commodity-specific bushels, lb, kg.\
+          \ Bushel views require a single-commodity context."
+        explode: true
+        in: query
+        name: units
+        required: false
+        schema:
+          enum:
+          - mt
+          - t
+          - bu
+          - lb
+          - kg
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryPage"
+          description: Paging object of inventory
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+      security:
+      - oauth2:
+        - inventory.read
+      summary: Browse & filter anonymized inventory
+      tags:
+      - Inventory
+      x-accepts:
+      - application/json
+  /inventory/filters:
+    get:
+      description: "Returns the distinct commodities, grades, provinces, and crop\
+        \ years currently available."
+      operationId: inventoryFilters
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryFilters"
+          description: Available filter facets
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+      security:
+      - oauth2:
+        - inventory.read
+      summary: Facet metadata for filters
+      tags:
+      - Inventory
+      x-accepts:
+      - application/json
+  /inventory/{id}:
+    get:
+      operationId: inventoryGet
+      parameters:
+      - description: "Public inventory id, e.g. inv_3Kd9aZ."
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "Unit for quantity values (and price values on market endpoints):\
+          \ mt (default), t = US short ton, bu = commodity-specific bushels, lb, kg.\
+          \ Bushel views require a single-commodity context."
+        explode: true
+        in: query
+        name: units
+        required: false
+        schema:
+          enum:
+          - mt
+          - t
+          - bu
+          - lb
+          - kg
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryEnvelope"
+          description: Inventory resource
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - oauth2:
+        - inventory.read
+      summary: Get one anonymized listing
+      tags:
+      - Inventory
+      x-accepts:
+      - application/json
+  /inventory/{id}/bids:
+    post:
+      description: Places a bid on behalf of the authenticated user's team. Requires
+        a user-context (authorization-code) token bound to a team. Send an Idempotency-Key
+        header to make retries safe.
+      operationId: bidPlace
+      parameters:
+      - description: Public inventory id.
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Same key + identical body returns the original bid (201); a different
+          body returns 409.
+        explode: false
+        in: header
+        name: Idempotency-Key
+        required: false
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlaceBid"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BidEnvelope"
+          description: Bid created
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Error"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+      security:
+      - oauth2:
+        - bids.write
+      summary: Place a bid on a listing
+      tags:
+      - Bids
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+  /bids:
+    get:
+      operationId: bidList
+      parameters:
+      - explode: true
+        in: query
+        name: status
+        required: false
+        schema:
+          enum:
+          - pending
+          - accepted
+          - rejected
+          - countered
+          - expired
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 20
+          maximum: 50
+          minimum: 1
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          default: 0
+          minimum: 0
+          type: integer
+        style: form
+      - description: "Unit for quantity values (and price values on market endpoints):\
+          \ mt (default), t = US short ton, bu = commodity-specific bushels, lb, kg.\
+          \ Bushel views require a single-commodity context."
+        explode: true
+        in: query
+        name: units
+        required: false
+        schema:
+          enum:
+          - mt
+          - t
+          - bu
+          - lb
+          - kg
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BidPage"
+          description: Paging object of bids
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+      security:
+      - oauth2:
+        - bids.read
+      summary: List the team's own bids
+      tags:
+      - Bids
+      x-accepts:
+      - application/json
+  /bids/{id}:
+    get:
+      operationId: bidGet
+      parameters:
+      - description: "Public bid id, e.g. bid_7Qp2."
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "Unit for quantity values (and price values on market endpoints):\
+          \ mt (default), t = US short ton, bu = commodity-specific bushels, lb, kg.\
+          \ Bushel views require a single-commodity context."
+        explode: true
+        in: query
+        name: units
+        required: false
+        schema:
+          enum:
+          - mt
+          - t
+          - bu
+          - lb
+          - kg
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BidEnvelope"
+          description: Bid resource
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - oauth2:
+        - bids.read
+      summary: Get one of the team's bids
+      tags:
+      - Bids
+      x-accepts:
+      - application/json
+  /bids/{id}/accept:
+    post:
+      description: Accepts a counter-offer on one of the team's bids; creates a trade.
+      operationId: bidAccept
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeEnvelope"
+          description: Bid accepted; trade created
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/Error"
+      security:
+      - oauth2:
+        - bids.write
+      summary: Accept a counter-offer
+      tags:
+      - Bids
+      x-accepts:
+      - application/json
+  /bids/{id}/reject:
+    post:
+      operationId: bidReject
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BidEnvelope"
+          description: Bid rejected
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - oauth2:
+        - bids.write
+      summary: Reject a counter-offer
+      tags:
+      - Bids
+      x-accepts:
+      - application/json
+  /bids/{id}/counter:
+    post:
+      operationId: bidCounter
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlaceBid"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BidEnvelope"
+          description: Counter created
+        "409":
+          $ref: "#/components/responses/Error"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+      security:
+      - oauth2:
+        - bids.write
+      summary: Counter a bid
+      tags:
+      - Bids
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+  /market/commodities:
+    get:
+      operationId: marketCommodities
+      parameters:
+      - description: "Unit for quantity values (and price values on market endpoints):\
+          \ mt (default), t = US short ton, bu = commodity-specific bushels, lb, kg.\
+          \ Bushel views require a single-commodity context."
+        explode: true
+        in: query
+        name: units
+        required: false
+        schema:
+          enum:
+          - mt
+          - t
+          - bu
+          - lb
+          - kg
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketCommodityList"
+          description: List of commodities
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+      security:
+      - oauth2:
+        - market.read
+      summary: Commodities with market-price coverage
+      tags:
+      - Market
+      x-accepts:
+      - application/json
+  /market/prices:
+    get:
+      operationId: marketPrices
+      parameters:
+      - description: "Commodity slug(s), comma-separated."
+        explode: true
+        in: query
+        name: commodity
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Returns the price as-of that date instead of the current price.
+        explode: true
+        in: query
+        name: date
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      - description: "Unit for quantity values (and price values on market endpoints):\
+          \ mt (default), t = US short ton, bu = commodity-specific bushels, lb, kg.\
+          \ Bushel views require a single-commodity context."
+        explode: true
+        in: query
+        name: units
+        required: false
+        schema:
+          enum:
+          - mt
+          - t
+          - bu
+          - lb
+          - kg
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketPriceList"
+          description: Prices per commodity
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+      security:
+      - oauth2:
+        - market.read
+      summary: "Market prices, current or as-of a date"
+      tags:
+      - Market
+      x-accepts:
+      - application/json
+  /market/prices/{commodity}/history:
+    get:
+      operationId: marketHistory
+      parameters:
+      - description: "Commodity slug, e.g. wheat."
+        explode: false
+        in: path
+        name: commodity
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: from
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: to
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: interval
+        required: false
+        schema:
+          default: day
+          enum:
+          - day
+          - week
+          type: string
+        style: form
+      - description: "Unit for quantity values (and price values on market endpoints):\
+          \ mt (default), t = US short ton, bu = commodity-specific bushels, lb, kg.\
+          \ Bushel views require a single-commodity context."
+        explode: true
+        in: query
+        name: units
+        required: false
+        schema:
+          enum:
+          - mt
+          - t
+          - bu
+          - lb
+          - kg
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceHistory"
+          description: Time series of prices
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+      security:
+      - oauth2:
+        - market.read
+      summary: Price history for a commodity
+      tags:
+      - Market
+      x-accepts:
+      - application/json
+  /trades:
+    get:
+      operationId: tradeList
+      parameters:
+      - explode: true
+        in: query
+        name: status
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: commodity
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: from
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: to
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 20
+          maximum: 50
+          minimum: 1
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          default: 0
+          minimum: 0
+          type: integer
+        style: form
+      - description: "Unit for quantity values (and price values on market endpoints):\
+          \ mt (default), t = US short ton, bu = commodity-specific bushels, lb, kg.\
+          \ Bushel views require a single-commodity context."
+        explode: true
+        in: query
+        name: units
+        required: false
+        schema:
+          enum:
+          - mt
+          - t
+          - bu
+          - lb
+          - kg
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradePage"
+          description: Paging object of trades
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+      security:
+      - oauth2:
+        - trades.read
+      summary: The team's own trades
+      tags:
+      - Trades
+      x-accepts:
+      - application/json
+  /trades/{id}:
+    get:
+      operationId: tradeGet
+      parameters:
+      - description: "Public trade id, e.g. trd_2Ws4."
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "Unit for quantity values (and price values on market endpoints):\
+          \ mt (default), t = US short ton, bu = commodity-specific bushels, lb, kg.\
+          \ Bushel views require a single-commodity context."
+        explode: true
+        in: query
+        name: units
+        required: false
+        schema:
+          enum:
+          - mt
+          - t
+          - bu
+          - lb
+          - kg
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeEnvelope"
+          description: Trade resource
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - oauth2:
+        - trades.read
+      summary: Get one of the team's trades
+      tags:
+      - Trades
+      x-accepts:
+      - application/json
+  /teams:
+    get:
+      operationId: teamList
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamList"
+          description: List of teams with roles
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+      security:
+      - oauth2:
+        - teams.read
+      summary: Teams the user belongs to
+      tags:
+      - Teams
+      x-accepts:
+      - application/json
+  /teams/{id}:
+    get:
+      operationId: teamGet
+      parameters:
+      - description: "Public team id, e.g. tm_5Lp8."
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamEnvelope"
+          description: Team resource
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - oauth2:
+        - teams.read
+      summary: Get one team
+      tags:
+      - Teams
+      x-accepts:
+      - application/json
+  /cash-bids:
+    get:
+      operationId: cashBidList
+      parameters:
+      - explode: true
+        in: query
+        name: is_active
+        required: false
+        schema:
+          type: boolean
+        style: form
+      - explode: true
+        in: query
+        name: commodity
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 20
+          maximum: 50
+          minimum: 1
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          default: 0
+          minimum: 0
+          type: integer
+        style: form
+      - description: "Unit for quantity values (and price values on market endpoints):\
+          \ mt (default), t = US short ton, bu = commodity-specific bushels, lb, kg.\
+          \ Bushel views require a single-commodity context."
+        explode: true
+        in: query
+        name: units
+        required: false
+        schema:
+          enum:
+          - mt
+          - t
+          - bu
+          - lb
+          - kg
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashBidPage"
+          description: Paging object of cash bids
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+      security:
+      - oauth2:
+        - cashbids.read
+      summary: The elevator's own cash bids
+      tags:
+      - Cash Bids
+      x-accepts:
+      - application/json
+    post:
+      operationId: cashBidCreate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreCashBid"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashBidEnvelope"
+          description: Cash bid created
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+      security:
+      - oauth2:
+        - cashbids.write
+      summary: Publish a cash bid
+      tags:
+      - Cash Bids
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+  /cash-bids/{id}:
+    patch:
+      operationId: cashBidUpdate
+      parameters:
+      - description: "Public cash bid id, e.g. cb_9Xa1."
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCashBid"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashBidEnvelope"
+          description: Updated cash bid
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+      security:
+      - oauth2:
+        - cashbids.write
+      summary: Update a cash bid
+      tags:
+      - Cash Bids
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+  /cash-bids/{id}/offers:
+    get:
+      description: Offers received on one of the elevator's cash bids. The offering
+        party is masked until the resulting trade is settled.
+      operationId: cashBidOffers
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: status
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 20
+          maximum: 50
+          minimum: 1
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          default: 0
+          minimum: 0
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashBidOfferPage"
+          description: Paging object of offers
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - oauth2:
+        - cashbids.read
+      summary: Offers against a cash bid
+      tags:
+      - Cash Bids
+      x-accepts:
+      - application/json
+  /cash-bid-offers/{id}/accept:
+    post:
+      operationId: cashBidOfferAccept
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeEnvelope"
+          description: Offer accepted; trade created
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Error"
+      security:
+      - oauth2:
+        - cashbids.write
+      summary: Accept a cash-bid offer
+      tags:
+      - Cash Bids
+      x-accepts:
+      - application/json
+  /cash-bid-offers/{id}/reject:
+    post:
+      operationId: cashBidOfferReject
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashBidOfferEnvelope"
+          description: Offer rejected
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Error"
+      security:
+      - oauth2:
+        - cashbids.write
+      summary: Reject a cash-bid offer
+      tags:
+      - Cash Bids
+      x-accepts:
+      - application/json
+  /webhooks:
+    get:
+      operationId: webhookList
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookList"
+          description: List of subscriptions
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+      security:
+      - oauth2:
+        - webhooks.read
+      summary: List webhook subscriptions
+      tags:
+      - Webhooks
+      x-accepts:
+      - application/json
+    post:
+      description: Creates a subscription. The signing secret is returned once in
+        the response and never again.
+      operationId: webhookCreate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Webhook"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookCreatedEnvelope"
+          description: Subscription created; secret returned once
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+      security:
+      - oauth2:
+        - webhooks.write
+      summary: Register a webhook subscription
+      tags:
+      - Webhooks
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+  /webhooks/{id}:
+    delete:
+      operationId: webhookDelete
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deleted"
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - oauth2:
+        - webhooks.write
+      summary: Delete a webhook subscription
+      tags:
+      - Webhooks
+      x-accepts:
+      - application/json
+  /webhooks/{id}/deliveries:
+    get:
+      operationId: webhookDeliveries
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 20
+          maximum: 50
+          minimum: 1
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          default: 0
+          minimum: 0
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookDeliveryPage"
+          description: Paging object of delivery records
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - oauth2:
+        - webhooks.read
+      summary: Recent delivery attempts (debugging)
+      tags:
+      - Webhooks
+      x-accepts:
+      - application/json
+  /delivery-locations:
+    get:
+      description: Returns the caller's own elevator delivery locations. Use the integer
+        `id` as `delivery_location_id` when placing a delivered (non-FOB) bid or a
+        cash bid.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/_delivery_locations_get_200_response"
+          description: List of delivery locations
+        "403":
+          $ref: "#/components/responses/Forbidden"
+      security:
+      - oauth2:
+        - locations.read
+      summary: List your elevator's delivery locations
+      tags:
+      - Bids
+      x-accepts:
+      - application/json
+  /me/farms:
+    get:
+      description: Your own farms. With farms.read the response includes the farm
+        name and coordinates; without it (e.g. an anonymous-submission platform) only
+        an opaque id + coarse location is returned.
+      responses:
+        "200":
+          description: List of farms
+      security:
+      - oauth2:
+        - listings.read
+      - oauth2:
+        - farms.read
+      summary: List your own farms
+      tags:
+      - Listings
+      x-accepts:
+      - application/json
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreFarm"
+        required: true
+      responses:
+        "201":
+          description: Farm created
+        "422":
+          $ref: "#/components/responses/Error"
+      security:
+      - oauth2:
+        - farms.write
+      summary: Create a farm
+      tags:
+      - Listings
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+  /me/inventory:
+    get:
+      parameters:
+      - explode: true
+        in: query
+        name: status
+        required: false
+        schema:
+          enum:
+          - listed
+          - unlisted
+          - archived
+          type: string
+        style: form
+      - description: "Unit for quantity values (and price values on market endpoints):\
+          \ mt (default), t = US short ton, bu = commodity-specific bushels, lb, kg.\
+          \ Bushel views require a single-commodity context."
+        explode: true
+        in: query
+        name: units
+        required: false
+        schema:
+          enum:
+          - mt
+          - t
+          - bu
+          - lb
+          - kg
+          type: string
+        style: form
+      responses:
+        "200":
+          description: Paging object of the seller's own listings (full detail)
+      security:
+      - oauth2:
+        - listings.read
+      summary: Your own inventory listings
+      tags:
+      - Listings
+      x-accepts:
+      - application/json
+    post:
+      description: "Creates a listing via the same core the MGX app uses. When list\
+        \ is true (default) it is published to the public anonymized marketplace immediately.\
+        \ Requires a valid payment method on file with MGX, and the listings.* scopes\
+        \ which are granted to approved partners (not self-service). The seller stays\
+        \ anonymous to all buyers until a trade settles."
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlaceListing"
+        required: true
+      responses:
+        "201":
+          description: Listing created (seller's full own view)
+        "422":
+          $ref: "#/components/responses/Error"
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: "No payment method on file, or the client is not an approved\
+            \ partner for listings access"
+      security:
+      - oauth2:
+        - listings.write
+      summary: Submit inventory (anonymized to buyers)
+      tags:
+      - Listings
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+  /me/inventory/{id}:
+    delete:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          description: Archived
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - oauth2:
+        - listings.write
+      summary: Archive a listing
+      tags:
+      - Listings
+      x-accepts:
+      - application/json
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "Unit for quantity values (and price values on market endpoints):\
+          \ mt (default), t = US short ton, bu = commodity-specific bushels, lb, kg.\
+          \ Bushel views require a single-commodity context."
+        explode: true
+        in: query
+        name: units
+        required: false
+        schema:
+          enum:
+          - mt
+          - t
+          - bu
+          - lb
+          - kg
+          type: string
+        style: form
+      responses:
+        "200":
+          description: Listing detail
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - oauth2:
+        - listings.read
+      summary: Get one of your listings
+      tags:
+      - Listings
+      x-accepts:
+      - application/json
+    patch:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          description: Updated listing
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - oauth2:
+        - listings.write
+      summary: "Update a listing (price, quantity, list/unlist)"
+      tags:
+      - Listings
+      x-accepts:
+      - application/json
+  /me/inventory/{id}/bids:
+    get:
+      description: "Bids buyers placed on your listing. The buyer stays masked until\
+        \ both invoices are paid. Respond with POST /v1/bids/{id}/accept|reject|counter."
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: status
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          description: Paging object of received bids
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - oauth2:
+        - listings.read
+      summary: Bids received on a listing
+      tags:
+      - Listings
+      x-accepts:
+      - application/json
+  /me/farms/{id}:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          description: Farm detail
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - oauth2:
+        - farms.read
+      summary: Get one of your farms (full detail)
+      tags:
+      - Listings
+      x-accepts:
+      - application/json
+    patch:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreFarm"
+      responses:
+        "200":
+          description: Updated farm
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - oauth2:
+        - farms.write
+      summary: Update a farm
+      tags:
+      - Listings
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+components:
+  parameters:
+    UnitsParam:
+      description: "Unit for quantity values (and price values on market endpoints):\
+        \ mt (default), t = US short ton, bu = commodity-specific bushels, lb, kg.\
+        \ Bushel views require a single-commodity context."
+      explode: true
+      in: query
+      name: units
+      required: false
+      schema:
+        enum:
+        - mt
+        - t
+        - bu
+        - lb
+        - kg
+        type: string
+      style: form
+  responses:
+    Unauthorized:
+      content:
+        application/json:
+          example:
+            error:
+              status: 401
+              code: unauthenticated
+              message: Missing or expired token.
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Missing or invalid token
+    Forbidden:
+      content:
+        application/json:
+          example:
+            error:
+              status: 403
+              code: insufficient_scope
+              message: This token is missing the required scope.
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Token lacks the required scope or eligibility
+    NotFound:
+      content:
+        application/json:
+          example:
+            error:
+              status: 404
+              code: not_found
+              message: Resource not found.
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Resource not found
+    ValidationError:
+      content:
+        application/json:
+          example:
+            error:
+              status: 422
+              code: validation_failed
+              message: The given data was invalid.
+              errors:
+              - field: quantity_mt
+                message: The quantity mt must be at least 0.01.
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Request failed validation
+    Error:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Error
+  schemas:
+    Error:
+      example:
+        error:
+          code: validation_failed
+          message: message
+          errors:
+          - field: field
+            message: message
+          - field: field
+            message: message
+          status: 422
+      properties:
+        error:
+          $ref: "#/components/schemas/Error_error"
+      type: object
+    Deleted:
+      example:
+        data:
+          deleted: true
+          id: id
+      properties:
+        data:
+          $ref: "#/components/schemas/Deleted_data"
+      type: object
+    Money:
+      example:
+        firm: true
+        amount: 312.5
+        unit: MT
+        currency: CAD
+      properties:
+        amount:
+          example: 312.5
+          type: number
+        currency:
+          example: CAD
+          type: string
+        unit:
+          example: MT
+          type: string
+        firm:
+          description: Present on asking prices; true when the price is firm.
+          nullable: true
+          type: boolean
+      type: object
+    Commodity:
+      example:
+        name: Wheat
+        slug: wheat
+      properties:
+        slug:
+          example: wheat
+          type: string
+        name:
+          example: Wheat
+          type: string
+      type: object
+    Quality:
+      description: Non-identifying seller quality claims. All fields are optional.
+      example:
+        dockage: 6.027456183070403
+        protein: 13.8
+        test_weight: 0.8008281904610115
+        falling_number: 1.4658129805029452
+        moisture: 12.1
+      properties:
+        protein:
+          example: 13.8
+          nullable: true
+          type: number
+        moisture:
+          example: 12.1
+          nullable: true
+          type: number
+        test_weight:
+          nullable: true
+          type: number
+        dockage:
+          nullable: true
+          type: number
+        falling_number:
+          nullable: true
+          type: number
+      type: object
+    Location:
+      description: Coarse location only — province + nearest city. Never the farm
+        name or exact coordinates.
+      properties:
+        province:
+          example: SK
+          type: string
+        nearest_city:
+          example: Saskatoon
+          type: string
+      type: object
+    DateWindow:
+      example:
+        from: 2000-01-23
+        to: 2000-01-23
+      properties:
+        from:
+          format: date
+          type: string
+        to:
+          format: date
+          type: string
+      type: object
+    Page:
+      description: Shared offset-pagination envelope.
+      properties:
+        limit:
+          example: 20
+          type: integer
+        offset:
+          example: 0
+          type: integer
+        total:
+          example: 214
+          type: integer
+        next:
+          nullable: true
+          type: string
+        previous:
+          nullable: true
+          type: string
+        href:
+          type: string
+      type: object
+    Inventory:
+      example:
+        commodity:
+          name: Wheat
+          slug: wheat
+        listed_at: 2000-01-23T04:56:07.000+00:00
+        quantity: ""
+        crop_year: 2025
+        quality:
+          dockage: 6.027456183070403
+          protein: 13.8
+          test_weight: 0.8008281904610115
+          falling_number: 1.4658129805029452
+          moisture: 12.1
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        is_organic: true
+        variety: variety
+        quantity_mt: 86.0
+        grade: 1CWRS
+        location: ""
+        id: inv_3Kd9aZ
+        asking_price: ""
+      properties:
+        id:
+          example: inv_3Kd9aZ
+          type: string
+        commodity:
+          $ref: "#/components/schemas/Commodity"
+        variety:
+          nullable: true
+          type: string
+        grade:
+          example: 1CWRS
+          nullable: true
+          type: string
+        is_organic:
+          type: boolean
+        crop_year:
+          example: 2025
+          nullable: true
+          type: integer
+        quantity_mt:
+          example: 86.0
+          type: number
+        quantity:
+          allOf:
+          - $ref: "#/components/schemas/Quantity"
+          description: The same quantity rendered in the `?units=` unit (defaults
+            to MT). `quantity_mt` is always MT.
+        asking_price:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          nullable: true
+        quality:
+          $ref: "#/components/schemas/Quality"
+        location:
+          allOf:
+          - $ref: "#/components/schemas/Location"
+          nullable: true
+        listed_at:
+          format: date-time
+          type: string
+        expires_at:
+          format: date-time
+          nullable: true
+          type: string
+      type: object
+    InventoryEnvelope:
+      example:
+        data:
+          commodity:
+            name: Wheat
+            slug: wheat
+          listed_at: 2000-01-23T04:56:07.000+00:00
+          quantity: ""
+          crop_year: 2025
+          quality:
+            dockage: 6.027456183070403
+            protein: 13.8
+            test_weight: 0.8008281904610115
+            falling_number: 1.4658129805029452
+            moisture: 12.1
+          expires_at: 2000-01-23T04:56:07.000+00:00
+          is_organic: true
+          variety: variety
+          quantity_mt: 86.0
+          grade: 1CWRS
+          location: ""
+          id: inv_3Kd9aZ
+          asking_price: ""
+      properties:
+        data:
+          $ref: "#/components/schemas/Inventory"
+      type: object
+    InventoryPage:
+      allOf:
+      - $ref: "#/components/schemas/Page"
+      - properties:
+          items:
+            items:
+              $ref: "#/components/schemas/Inventory"
+            type: array
+        type: object
+      example:
+        next: next
+        total: 214
+        offset: 0
+        previous: previous
+        limit: 20
+        href: href
+        items:
+        - commodity:
+            name: Wheat
+            slug: wheat
+          listed_at: 2000-01-23T04:56:07.000+00:00
+          quantity: ""
+          crop_year: 2025
+          quality:
+            dockage: 6.027456183070403
+            protein: 13.8
+            test_weight: 0.8008281904610115
+            falling_number: 1.4658129805029452
+            moisture: 12.1
+          expires_at: 2000-01-23T04:56:07.000+00:00
+          is_organic: true
+          variety: variety
+          quantity_mt: 86.0
+          grade: 1CWRS
+          location: ""
+          id: inv_3Kd9aZ
+          asking_price: ""
+        - commodity:
+            name: Wheat
+            slug: wheat
+          listed_at: 2000-01-23T04:56:07.000+00:00
+          quantity: ""
+          crop_year: 2025
+          quality:
+            dockage: 6.027456183070403
+            protein: 13.8
+            test_weight: 0.8008281904610115
+            falling_number: 1.4658129805029452
+            moisture: 12.1
+          expires_at: 2000-01-23T04:56:07.000+00:00
+          is_organic: true
+          variety: variety
+          quantity_mt: 86.0
+          grade: 1CWRS
+          location: ""
+          id: inv_3Kd9aZ
+          asking_price: ""
+    InventoryFilters:
+      example:
+        provinces:
+        - provinces
+        - provinces
+        crop_years:
+        - 0
+        - 0
+        commodities:
+        - name: Wheat
+          slug: wheat
+        - name: Wheat
+          slug: wheat
+        grades:
+        - grades
+        - grades
+      properties:
+        commodities:
+          items:
+            $ref: "#/components/schemas/Commodity"
+          type: array
+        grades:
+          items:
+            type: string
+          type: array
+        provinces:
+          items:
+            type: string
+          type: array
+        crop_years:
+          items:
+            type: integer
+          type: array
+      type: object
+    PlaceBid:
+      example:
+        delivery:
+          from: 2000-01-23
+          to: 2000-01-23
+        quantity: 0.15658129805029453
+        delivery_location_id: 6
+        additional_terms: additional_terms
+        subject_to_sample_approval: true
+        fob_farm: true
+        unit: mt
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        price: ""
+        quantity_mt: 50
+        bids:
+        - price: 0.8008281904610115
+          grade: grade
+        - price: 0.8008281904610115
+          grade: grade
+        grading_type: Third-Party
+        includes_net_handling_fees: true
+      properties:
+        price:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          description: "Single price for verified inventory. Use bids[] for unverified\
+            \ inventory instead."
+        bids:
+          description: Per-grade prices for unverified inventory.
+          items:
+            $ref: "#/components/schemas/PlaceBid_bids_inner"
+          type: array
+        grading_type:
+          enum:
+          - Third-Party
+          - In-House
+          type: string
+        quantity_mt:
+          description: Quantity in metric tons. Optional if `quantity` + `unit` are
+            sent instead.
+          example: 50
+          type: number
+        delivery:
+          $ref: "#/components/schemas/DateWindow"
+        fob_farm:
+          type: boolean
+        delivery_location_id:
+          type: integer
+        subject_to_sample_approval:
+          type: boolean
+        includes_net_handling_fees:
+          type: boolean
+        additional_terms:
+          maxLength: 2000
+          type: string
+        expires_at:
+          format: date-time
+          type: string
+        quantity:
+          description: Quantity in `unit`; an alternative to `quantity_mt`. Send either
+            `quantity_mt` (always MT) or `quantity` + `unit`.
+          minimum: 0.01
+          type: number
+        unit:
+          description: Unit for `quantity` (default mt).
+          enum:
+          - mt
+          - t
+          - bu
+          - lb
+          - kg
+          type: string
+      required:
+      - delivery
+      type: object
+    Bid:
+      example:
+        delivery:
+          from: 2000-01-23
+          to: 2000-01-23
+        quantity: ""
+        inventory_id: inv_3Kd9aZ
+        created_at: 2000-01-23T04:56:07.000+00:00
+        subject_to_sample_approval: true
+        grades:
+        - price:
+            firm: true
+            amount: 312.5
+            unit: MT
+            currency: CAD
+          grade: grade
+        - price:
+            firm: true
+            amount: 312.5
+            unit: MT
+            currency: CAD
+          grade: grade
+        fob_farm: true
+        reference: BID-001
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        price: ""
+        quantity_mt: 0.8008281904610115
+        counterparty: ""
+        id: bid_7Qp2
+        status: pending
+      properties:
+        id:
+          example: bid_7Qp2
+          type: string
+        reference:
+          example: BID-001
+          type: string
+        inventory_id:
+          example: inv_3Kd9aZ
+          type: string
+        status:
+          enum:
+          - pending
+          - accepted
+          - rejected
+          - countered
+          - expired
+          type: string
+        price:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          nullable: true
+        grades:
+          items:
+            $ref: "#/components/schemas/Bid_grades_inner"
+          nullable: true
+          type: array
+        quantity_mt:
+          type: number
+        quantity:
+          allOf:
+          - $ref: "#/components/schemas/Quantity"
+          description: The same quantity rendered in the `?units=` unit (defaults
+            to MT). `quantity_mt` is always MT.
+        delivery:
+          $ref: "#/components/schemas/DateWindow"
+        subject_to_sample_approval:
+          type: boolean
+        fob_farm:
+          type: boolean
+        created_at:
+          format: date-time
+          type: string
+        expires_at:
+          format: date-time
+          nullable: true
+          type: string
+        counterparty:
+          allOf:
+          - $ref: "#/components/schemas/Counterparty"
+          description: Null until both invoices on the resulting trade are paid.
+          nullable: true
+      type: object
+    BidEnvelope:
+      example:
+        data:
+          delivery:
+            from: 2000-01-23
+            to: 2000-01-23
+          quantity: ""
+          inventory_id: inv_3Kd9aZ
+          created_at: 2000-01-23T04:56:07.000+00:00
+          subject_to_sample_approval: true
+          grades:
+          - price:
+              firm: true
+              amount: 312.5
+              unit: MT
+              currency: CAD
+            grade: grade
+          - price:
+              firm: true
+              amount: 312.5
+              unit: MT
+              currency: CAD
+            grade: grade
+          fob_farm: true
+          reference: BID-001
+          expires_at: 2000-01-23T04:56:07.000+00:00
+          price: ""
+          quantity_mt: 0.8008281904610115
+          counterparty: ""
+          id: bid_7Qp2
+          status: pending
+      properties:
+        data:
+          $ref: "#/components/schemas/Bid"
+      type: object
+    BidPage:
+      allOf:
+      - $ref: "#/components/schemas/Page"
+      - properties:
+          items:
+            items:
+              $ref: "#/components/schemas/Bid"
+            type: array
+        type: object
+      example:
+        next: next
+        total: 214
+        offset: 0
+        previous: previous
+        limit: 20
+        href: href
+        items:
+        - delivery:
+            from: 2000-01-23
+            to: 2000-01-23
+          quantity: ""
+          inventory_id: inv_3Kd9aZ
+          created_at: 2000-01-23T04:56:07.000+00:00
+          subject_to_sample_approval: true
+          grades:
+          - price:
+              firm: true
+              amount: 312.5
+              unit: MT
+              currency: CAD
+            grade: grade
+          - price:
+              firm: true
+              amount: 312.5
+              unit: MT
+              currency: CAD
+            grade: grade
+          fob_farm: true
+          reference: BID-001
+          expires_at: 2000-01-23T04:56:07.000+00:00
+          price: ""
+          quantity_mt: 0.8008281904610115
+          counterparty: ""
+          id: bid_7Qp2
+          status: pending
+        - delivery:
+            from: 2000-01-23
+            to: 2000-01-23
+          quantity: ""
+          inventory_id: inv_3Kd9aZ
+          created_at: 2000-01-23T04:56:07.000+00:00
+          subject_to_sample_approval: true
+          grades:
+          - price:
+              firm: true
+              amount: 312.5
+              unit: MT
+              currency: CAD
+            grade: grade
+          - price:
+              firm: true
+              amount: 312.5
+              unit: MT
+              currency: CAD
+            grade: grade
+          fob_farm: true
+          reference: BID-001
+          expires_at: 2000-01-23T04:56:07.000+00:00
+          price: ""
+          quantity_mt: 0.8008281904610115
+          counterparty: ""
+          id: bid_7Qp2
+          status: pending
+    Counterparty:
+      properties:
+        name:
+          example: John Doe
+          type: string
+      type: object
+    Trade:
+      example:
+        commodity:
+          name: Wheat
+          slug: wheat
+        side: buyer
+        quantity: ""
+        quantity_mt: 0.8008281904610115
+        price: ""
+        counterparty: ""
+        created_at: 2000-01-23T04:56:07.000+00:00
+        id: trd_2Ws4
+        settled_at: 2000-01-23T04:56:07.000+00:00
+        status: status
+      properties:
+        id:
+          example: trd_2Ws4
+          type: string
+        side:
+          enum:
+          - buyer
+          - seller
+          type: string
+        status:
+          type: string
+        commodity:
+          $ref: "#/components/schemas/Commodity"
+        quantity_mt:
+          type: number
+        quantity:
+          allOf:
+          - $ref: "#/components/schemas/Quantity"
+          description: The same quantity rendered in the `?units=` unit (defaults
+            to MT). `quantity_mt` is always MT.
+        price:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          nullable: true
+        counterparty:
+          allOf:
+          - $ref: "#/components/schemas/Counterparty"
+          description: Null until both invoices are paid.
+          nullable: true
+        settled_at:
+          format: date-time
+          nullable: true
+          type: string
+        created_at:
+          format: date-time
+          type: string
+      type: object
+    TradeEnvelope:
+      example:
+        data:
+          commodity:
+            name: Wheat
+            slug: wheat
+          side: buyer
+          quantity: ""
+          quantity_mt: 0.8008281904610115
+          price: ""
+          counterparty: ""
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: trd_2Ws4
+          settled_at: 2000-01-23T04:56:07.000+00:00
+          status: status
+      properties:
+        data:
+          $ref: "#/components/schemas/Trade"
+      type: object
+    TradePage:
+      allOf:
+      - $ref: "#/components/schemas/Page"
+      - properties:
+          items:
+            items:
+              $ref: "#/components/schemas/Trade"
+            type: array
+        type: object
+      example:
+        next: next
+        total: 214
+        offset: 0
+        previous: previous
+        limit: 20
+        href: href
+        items:
+        - commodity:
+            name: Wheat
+            slug: wheat
+          side: buyer
+          quantity: ""
+          quantity_mt: 0.8008281904610115
+          price: ""
+          counterparty: ""
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: trd_2Ws4
+          settled_at: 2000-01-23T04:56:07.000+00:00
+          status: status
+        - commodity:
+            name: Wheat
+            slug: wheat
+          side: buyer
+          quantity: ""
+          quantity_mt: 0.8008281904610115
+          price: ""
+          counterparty: ""
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: trd_2Ws4
+          settled_at: 2000-01-23T04:56:07.000+00:00
+          status: status
+    Team:
+      example:
+        role: owner
+        name: Acme Corp Buying
+        id: tm_5Lp8
+        member_count: 3
+      properties:
+        id:
+          example: tm_5Lp8
+          type: string
+        name:
+          example: Acme Corp Buying
+          type: string
+        role:
+          enum:
+          - owner
+          - member
+          type: string
+        member_count:
+          example: 3
+          type: integer
+      type: object
+    TeamEnvelope:
+      example:
+        data:
+          role: owner
+          name: Acme Corp Buying
+          id: tm_5Lp8
+          member_count: 3
+      properties:
+        data:
+          $ref: "#/components/schemas/Team"
+      type: object
+    TeamList:
+      example:
+        items:
+        - role: owner
+          name: Acme Corp Buying
+          id: tm_5Lp8
+          member_count: 3
+        - role: owner
+          name: Acme Corp Buying
+          id: tm_5Lp8
+          member_count: 3
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/Team"
+          type: array
+      type: object
+    StoreCashBid:
+      example:
+        commodity: canola
+        delivery:
+          start: 2000-01-23
+          end: 2000-01-23
+        unit: mt
+        expires_at: 2000-01-23
+        quantity: 0.15658129805029453
+        delivery_location_id: 6
+        price:
+          firm: true
+          amount: 312.5
+          unit: MT
+          currency: CAD
+        quantity_mt: 0.8008281904610115
+      properties:
+        commodity:
+          example: canola
+          type: string
+        price:
+          $ref: "#/components/schemas/Money"
+        quantity_mt:
+          description: Quantity in metric tons. Optional if `quantity` + `unit` are
+            sent instead.
+          type: number
+        delivery:
+          $ref: "#/components/schemas/StoreCashBid_delivery"
+        delivery_location_id:
+          type: integer
+        expires_at:
+          format: date
+          type: string
+        quantity:
+          description: Quantity in `unit`; an alternative to `quantity_mt`. Send either
+            `quantity_mt` (always MT) or `quantity` + `unit`.
+          minimum: 0.01
+          type: number
+        unit:
+          description: Unit for `quantity` (default mt).
+          enum:
+          - mt
+          - t
+          - bu
+          - lb
+          - kg
+          type: string
+      required:
+      - commodity
+      - delivery
+      - price
+      type: object
+    UpdateCashBid:
+      example:
+        delivery:
+          start: 2000-01-23
+          end: 2000-01-23
+        expires_at: 2000-01-23
+        is_active: true
+        delivery_location_id: 6
+        price:
+          firm: true
+          amount: 312.5
+          unit: MT
+          currency: CAD
+        quantity_mt: 0.8008281904610115
+      properties:
+        price:
+          $ref: "#/components/schemas/Money"
+        quantity_mt:
+          type: number
+        delivery:
+          $ref: "#/components/schemas/UpdateCashBid_delivery"
+        delivery_location_id:
+          type: integer
+        expires_at:
+          format: date
+          type: string
+        is_active:
+          type: boolean
+      type: object
+    CashBid:
+      example:
+        identifier: CB-001
+        commodity: ""
+        delivery:
+          start: 2000-01-23
+          end: 2000-01-23
+        quantity: ""
+        is_active: true
+        expires_at: 2000-01-23
+        delivery_location_id: 6
+        price: ""
+        quantity_mt: 0.8008281904610115
+        location: ""
+        id: cb_9Xa1
+      properties:
+        id:
+          example: cb_9Xa1
+          type: string
+        identifier:
+          example: CB-001
+          type: string
+        commodity:
+          allOf:
+          - $ref: "#/components/schemas/Commodity"
+          nullable: true
+        price:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          nullable: true
+        quantity_mt:
+          type: number
+        quantity:
+          allOf:
+          - $ref: "#/components/schemas/Quantity"
+          description: The same quantity rendered in the `?units=` unit (defaults
+            to MT). `quantity_mt` is always MT.
+        delivery_location_id:
+          nullable: true
+          type: integer
+        location:
+          allOf:
+          - $ref: "#/components/schemas/Location"
+          nullable: true
+        delivery:
+          $ref: "#/components/schemas/UpdateCashBid_delivery"
+        is_active:
+          type: boolean
+        expires_at:
+          format: date
+          nullable: true
+          type: string
+      type: object
+    CashBidEnvelope:
+      example:
+        data:
+          identifier: CB-001
+          commodity: ""
+          delivery:
+            start: 2000-01-23
+            end: 2000-01-23
+          quantity: ""
+          is_active: true
+          expires_at: 2000-01-23
+          delivery_location_id: 6
+          price: ""
+          quantity_mt: 0.8008281904610115
+          location: ""
+          id: cb_9Xa1
+      properties:
+        data:
+          $ref: "#/components/schemas/CashBid"
+      type: object
+    CashBidPage:
+      allOf:
+      - $ref: "#/components/schemas/Page"
+      - properties:
+          items:
+            items:
+              $ref: "#/components/schemas/CashBid"
+            type: array
+        type: object
+      example:
+        next: next
+        total: 214
+        offset: 0
+        previous: previous
+        limit: 20
+        href: href
+        items:
+        - identifier: CB-001
+          commodity: ""
+          delivery:
+            start: 2000-01-23
+            end: 2000-01-23
+          quantity: ""
+          is_active: true
+          expires_at: 2000-01-23
+          delivery_location_id: 6
+          price: ""
+          quantity_mt: 0.8008281904610115
+          location: ""
+          id: cb_9Xa1
+        - identifier: CB-001
+          commodity: ""
+          delivery:
+            start: 2000-01-23
+            end: 2000-01-23
+          quantity: ""
+          is_active: true
+          expires_at: 2000-01-23
+          delivery_location_id: 6
+          price: ""
+          quantity_mt: 0.8008281904610115
+          location: ""
+          id: cb_9Xa1
+    CashBidOffer:
+      example:
+        price: ""
+        quantity_mt: 0.8008281904610115
+        cash_bid_id: cb_9Xa1
+        counterparty: ""
+        created_at: 2000-01-23T04:56:07.000+00:00
+        id: cbo_4Tn7
+        status: pending
+      properties:
+        id:
+          example: cbo_4Tn7
+          type: string
+        cash_bid_id:
+          example: cb_9Xa1
+          type: string
+        status:
+          enum:
+          - pending
+          - accepted
+          - rejected
+          - expired
+          type: string
+        price:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          nullable: true
+        quantity_mt:
+          type: number
+        counterparty:
+          allOf:
+          - $ref: "#/components/schemas/Counterparty"
+          description: Masked until the resulting trade settles.
+          nullable: true
+        created_at:
+          format: date-time
+          type: string
+      type: object
+    CashBidOfferEnvelope:
+      example:
+        data:
+          price: ""
+          quantity_mt: 0.8008281904610115
+          cash_bid_id: cb_9Xa1
+          counterparty: ""
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: cbo_4Tn7
+          status: pending
+      properties:
+        data:
+          $ref: "#/components/schemas/CashBidOffer"
+      type: object
+    CashBidOfferPage:
+      allOf:
+      - $ref: "#/components/schemas/Page"
+      - properties:
+          items:
+            items:
+              $ref: "#/components/schemas/CashBidOffer"
+            type: array
+        type: object
+      example:
+        next: next
+        total: 214
+        offset: 0
+        previous: previous
+        limit: 20
+        href: href
+        items:
+        - price: ""
+          quantity_mt: 0.8008281904610115
+          cash_bid_id: cb_9Xa1
+          counterparty: ""
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: cbo_4Tn7
+          status: pending
+        - price: ""
+          quantity_mt: 0.8008281904610115
+          cash_bid_id: cb_9Xa1
+          counterparty: ""
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: cbo_4Tn7
+          status: pending
+    MarketCommodity:
+      example:
+        unit: MT
+        has_history: true
+        name: Wheat
+        currency: CAD
+        market_price_updated_at: 2000-01-23T04:56:07.000+00:00
+        slug: wheat
+      properties:
+        slug:
+          example: wheat
+          type: string
+        name:
+          example: Wheat
+          type: string
+        unit:
+          example: MT
+          type: string
+        currency:
+          example: CAD
+          type: string
+        has_history:
+          type: boolean
+        market_price_updated_at:
+          format: date-time
+          nullable: true
+          type: string
+      type: object
+    MarketCommodityList:
+      example:
+        items:
+        - unit: MT
+          has_history: true
+          name: Wheat
+          currency: CAD
+          market_price_updated_at: 2000-01-23T04:56:07.000+00:00
+          slug: wheat
+        - unit: MT
+          has_history: true
+          name: Wheat
+          currency: CAD
+          market_price_updated_at: 2000-01-23T04:56:07.000+00:00
+          slug: wheat
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/MarketCommodity"
+          type: array
+      type: object
+    MarketPrice:
+      example:
+        change_pct: 1.4
+        commodity:
+          name: Wheat
+          slug: wheat
+        previous: ""
+        price: ""
+        as_of: 2000-01-23T04:56:07.000+00:00
+        range:
+          high: 6.027456183070403
+          low: 0.8008281904610115
+      properties:
+        commodity:
+          $ref: "#/components/schemas/Commodity"
+        price:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          nullable: true
+        previous:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          nullable: true
+        change_pct:
+          example: 1.4
+          nullable: true
+          type: number
+        range:
+          $ref: "#/components/schemas/MarketPrice_range"
+        as_of:
+          format: date-time
+          nullable: true
+          type: string
+      type: object
+    MarketPriceList:
+      example:
+        items:
+        - change_pct: 1.4
+          commodity:
+            name: Wheat
+            slug: wheat
+          previous: ""
+          price: ""
+          as_of: 2000-01-23T04:56:07.000+00:00
+          range:
+            high: 6.027456183070403
+            low: 0.8008281904610115
+        - change_pct: 1.4
+          commodity:
+            name: Wheat
+            slug: wheat
+          previous: ""
+          price: ""
+          as_of: 2000-01-23T04:56:07.000+00:00
+          range:
+            high: 6.027456183070403
+            low: 0.8008281904610115
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/MarketPrice"
+          type: array
+      type: object
+    PriceHistory:
+      example:
+        commodity:
+          name: Wheat
+          slug: wheat
+        unit: mt
+        interval: day
+        currency: currency
+        points:
+        - date: 2000-01-23
+          price: 0.8008281904610115
+          source: source
+        - date: 2000-01-23
+          price: 0.8008281904610115
+          source: source
+      properties:
+        commodity:
+          $ref: "#/components/schemas/Commodity"
+        interval:
+          enum:
+          - day
+          - week
+          type: string
+        points:
+          items:
+            $ref: "#/components/schemas/PriceHistory_points_inner"
+          type: array
+        unit:
+          description: Unit the price points are rendered in.
+          enum:
+          - mt
+          - t
+          - bu
+          - lb
+          - kg
+          type: string
+        currency:
+          description: ISO currency code for the price points.
+          type: string
+      type: object
+    Webhook:
+      example:
+        url: https://openapi-generator.tech
+        events:
+        - bid.accepted
+        - bid.accepted
+      properties:
+        url:
+          format: uri
+          type: string
+        events:
+          items:
+            enum:
+            - bid.accepted
+            - bid.rejected
+            - bid.countered
+            - trade.created
+            - trade.settled
+            - cashbid.offer_received
+            - inventory.matched
+            type: string
+          type: array
+      required:
+      - events
+      - url
+      type: object
+    WebhookResource:
+      example:
+        active: true
+        created_at: 2000-01-23T04:56:07.000+00:00
+        id: wh_8Hk3
+        url: https://openapi-generator.tech
+        events:
+        - events
+        - events
+      properties:
+        id:
+          example: wh_8Hk3
+          type: string
+        url:
+          format: uri
+          type: string
+        events:
+          items:
+            type: string
+          type: array
+        active:
+          type: boolean
+        created_at:
+          format: date-time
+          type: string
+      type: object
+    WebhookCreated:
+      allOf:
+      - $ref: "#/components/schemas/WebhookResource"
+      - properties:
+          secret:
+            description: "Signing secret — shown once, store it now."
+            example: whsec_…
+            type: string
+        type: object
+      example:
+        active: true
+        created_at: 2000-01-23T04:56:07.000+00:00
+        id: wh_8Hk3
+        secret: whsec_…
+        url: https://openapi-generator.tech
+        events:
+        - events
+        - events
+    WebhookCreatedEnvelope:
+      example:
+        data:
+          active: true
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: wh_8Hk3
+          secret: whsec_…
+          url: https://openapi-generator.tech
+          events:
+          - events
+          - events
+      properties:
+        data:
+          $ref: "#/components/schemas/WebhookCreated"
+      type: object
+    WebhookList:
+      example:
+        items:
+        - active: true
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: wh_8Hk3
+          url: https://openapi-generator.tech
+          events:
+          - events
+          - events
+        - active: true
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: wh_8Hk3
+          url: https://openapi-generator.tech
+          events:
+          - events
+          - events
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/WebhookResource"
+          type: array
+      type: object
+    WebhookEventType:
+      enum:
+      - bid.accepted
+      - bid.rejected
+      - bid.countered
+      - trade.created
+      - trade.settled
+      - cashbid.offer_received
+      - inventory.matched
+      type: string
+    WebhookEvent:
+      description: The payload delivered to a webhook endpoint. Verify its signature
+        with the SDK's webhooks.verify() helper before trusting it.
+      properties:
+        id:
+          example: evt_6Yh2
+          type: string
+        type:
+          $ref: "#/components/schemas/WebhookEventType"
+        created_at:
+          format: date-time
+          type: string
+        data:
+          additionalProperties: true
+          description: "The resource for this event (e.g. a Trade for trade.created,\
+            \ a CashBidOffer for cashbid.offer_received). Counterparty fields stay\
+            \ masked until a trade settles."
+          type: object
+      type: object
+    WebhookDelivery:
+      example:
+        response_code: 0
+        attempted_at: 2000-01-23T04:56:07.000+00:00
+        payload: ""
+        id: whd_2Bv9
+        event: trade.created
+        status: pending
+      properties:
+        id:
+          example: whd_2Bv9
+          type: string
+        event:
+          example: trade.created
+          type: string
+        status:
+          enum:
+          - pending
+          - succeeded
+          - failed
+          type: string
+        response_code:
+          nullable: true
+          type: integer
+        attempted_at:
+          format: date-time
+          type: string
+        payload:
+          allOf:
+          - $ref: "#/components/schemas/WebhookEvent"
+          nullable: true
+      type: object
+    WebhookDeliveryPage:
+      allOf:
+      - $ref: "#/components/schemas/Page"
+      - properties:
+          items:
+            items:
+              $ref: "#/components/schemas/WebhookDelivery"
+            type: array
+        type: object
+      example:
+        next: next
+        total: 214
+        offset: 0
+        previous: previous
+        limit: 20
+        href: href
+        items:
+        - response_code: 0
+          attempted_at: 2000-01-23T04:56:07.000+00:00
+          payload: ""
+          id: whd_2Bv9
+          event: trade.created
+          status: pending
+        - response_code: 0
+          attempted_at: 2000-01-23T04:56:07.000+00:00
+          payload: ""
+          id: whd_2Bv9
+          event: trade.created
+          status: pending
+    PlaceListing:
+      example:
+        commodity: wheat
+        quantity: 0.3716076749251911
+        list: true
+        crop_year: 6
+        quality:
+          dockage: 7.061401241503109
+          protein: 5.962133916683182
+          test_weight: 2.3021358869347655
+          falling_number: 9
+          moisture: 5.637376656633329
+        target_price:
+          firm: true
+          amount: 1.4658129805029452
+        unit: mt
+        is_organic: true
+        variety: variety
+        quantity_mt: 0.8008281904610115
+        grade: grade
+        farm_id: farm_id
+        seller_notes: seller_notes
+      properties:
+        commodity:
+          example: wheat
+          type: string
+        farm_id:
+          description: One of your farm ids from GET /v1/me/farms.
+          type: string
+        quantity_mt:
+          description: Quantity in metric tons. Optional if `quantity` + `unit` are
+            sent instead.
+          type: number
+        variety:
+          type: string
+        crop_year:
+          type: integer
+        grade:
+          description: "Estimated grade name, e.g. 1CWRS."
+          type: string
+        target_price:
+          $ref: "#/components/schemas/PlaceListing_target_price"
+        is_organic:
+          type: boolean
+        quality:
+          $ref: "#/components/schemas/PlaceListing_quality"
+        seller_notes:
+          type: string
+        list:
+          description: Publish to the marketplace immediately (default true).
+          type: boolean
+        quantity:
+          description: Quantity in `unit`; an alternative to `quantity_mt`. Send either
+            `quantity_mt` (always MT) or `quantity` + `unit`.
+          minimum: 0.01
+          type: number
+        unit:
+          description: Unit for `quantity` (default mt).
+          enum:
+          - mt
+          - t
+          - bu
+          - lb
+          - kg
+          type: string
+      required:
+      - commodity
+      - farm_id
+      type: object
+    StoreFarm:
+      example:
+        nearest_province: nearest_province
+        latitude: 0.8008281904610115
+        nearest_city: nearest_city
+        name: name
+        longitude: 6.027456183070403
+      properties:
+        name:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        nearest_city:
+          type: string
+        nearest_province:
+          type: string
+      required:
+      - latitude
+      - longitude
+      - name
+      - nearest_city
+      - nearest_province
+      type: object
+    Quantity:
+      properties:
+        amount:
+          description: Amount in `unit`. Null when a bushel view is requested for
+            a commodity with no configured bushel weight.
+          nullable: true
+          type: number
+        unit:
+          enum:
+          - mt
+          - t
+          - bu
+          - lb
+          - kg
+          type: string
+      type: object
+    _delivery_locations_get_200_response_items_inner:
+      example:
+        province: province
+        city: city
+        formatted: formatted
+        name: name
+        id: 0
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        formatted:
+          type: string
+        city:
+          type: string
+        province:
+          type: string
+      type: object
+    _delivery_locations_get_200_response:
+      example:
+        items:
+        - province: province
+          city: city
+          formatted: formatted
+          name: name
+          id: 0
+        - province: province
+          city: city
+          formatted: formatted
+          name: name
+          id: 0
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/_delivery_locations_get_200_response_items_inner"
+          type: array
+      type: object
+    Error_error_errors_inner:
+      example:
+        field: field
+        message: message
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+      type: object
+    Error_error:
+      example:
+        code: validation_failed
+        message: message
+        errors:
+        - field: field
+          message: message
+        - field: field
+          message: message
+        status: 422
+      properties:
+        status:
+          example: 422
+          type: integer
+        code:
+          example: validation_failed
+          type: string
+        message:
+          type: string
+        errors:
+          items:
+            $ref: "#/components/schemas/Error_error_errors_inner"
+          type: array
+      required:
+      - code
+      - message
+      - status
+      type: object
+    Deleted_data:
+      example:
+        deleted: true
+        id: id
+      properties:
+        deleted:
+          example: true
+          type: boolean
+        id:
+          type: string
+      type: object
+    PlaceBid_bids_inner:
+      example:
+        price: 0.8008281904610115
+        grade: grade
+      properties:
+        grade:
+          type: string
+        price:
+          type: number
+      required:
+      - grade
+      - price
+      type: object
+    Bid_grades_inner:
+      example:
+        price:
+          firm: true
+          amount: 312.5
+          unit: MT
+          currency: CAD
+        grade: grade
+      properties:
+        grade:
+          type: string
+        price:
+          $ref: "#/components/schemas/Money"
+      type: object
+    StoreCashBid_delivery:
+      example:
+        start: 2000-01-23
+        end: 2000-01-23
+      properties:
+        start:
+          format: date
+          type: string
+        end:
+          format: date
+          type: string
+      required:
+      - end
+      - start
+      type: object
+    UpdateCashBid_delivery:
+      example:
+        start: 2000-01-23
+        end: 2000-01-23
+      properties:
+        start:
+          format: date
+          type: string
+        end:
+          format: date
+          type: string
+      type: object
+    MarketPrice_range:
+      example:
+        high: 6.027456183070403
+        low: 0.8008281904610115
+      nullable: true
+      properties:
+        low:
+          type: number
+        high:
+          type: number
+      type: object
+    PriceHistory_points_inner:
+      example:
+        date: 2000-01-23
+        price: 0.8008281904610115
+        source: source
+      properties:
+        date:
+          format: date
+          type: string
+        price:
+          type: number
+        source:
+          type: string
+      type: object
+    PlaceListing_target_price:
+      example:
+        firm: true
+        amount: 1.4658129805029452
+      properties:
+        amount:
+          type: number
+        firm:
+          type: boolean
+      type: object
+    PlaceListing_quality:
+      example:
+        dockage: 7.061401241503109
+        protein: 5.962133916683182
+        test_weight: 2.3021358869347655
+        falling_number: 9
+        moisture: 5.637376656633329
+      properties:
+        protein:
+          type: number
+        moisture:
+          type: number
+        test_weight:
+          type: number
+        dockage:
+          type: number
+        falling_number:
+          type: integer
+      type: object
+  securitySchemes:
+    oauth2:
+      description: Login with MGX (authorization code + PKCE) for user-context scopes;
+        client credentials for read-only scopes.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://api.mygrainexchange.com/oauth/authorize
+          refreshUrl: https://api.mygrainexchange.com/oauth/token
+          scopes:
+            inventory.read: Browse and filter anonymized inventory
+            market.read: "Read market commodities, prices, and price history"
+            bids.read: Read your team's bids
+            bids.write: Place bids on behalf of your team
+            trades.read: Read your team's trades
+            teams.read: Read the teams you belong to
+            cashbids.read: Read your cash bids and offers
+            cashbids.write: Create and update your cash bids
+            webhooks.read: Read your webhook subscriptions
+            webhooks.write: Manage your webhook subscriptions
+            openid: OpenID Connect sign-in
+            profile: Basic profile information
+            email: Your email address
+            listings.read: Read your own inventory listings and the bids on them
+            listings.write: "Submit, update, and archive your inventory listings"
+            farms.read: See your farm names and locations
+            farms.write: Create and edit your farms
+            locations.read: Read your elevator delivery locations
+          tokenUrl: https://api.mygrainexchange.com/oauth/token
+        clientCredentials:
+          scopes:
+            inventory.read: Browse and filter anonymized inventory
+            market.read: "Read market commodities, prices, and history"
+          tokenUrl: https://api.mygrainexchange.com/oauth/token
+      type: oauth2
+

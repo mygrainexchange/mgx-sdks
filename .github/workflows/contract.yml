@@ -1,0 +1,71 @@
+name: contract
+
+# Gate 2 — spec ↔ SDKs. Builds each SDK and runs its contract smoke test against
+# a Prism mock booted from the OpenAPI spec, so a client that drifts from the
+# contract fails here without needing the live API.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  SPEC: spec/openapi.json
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [node, python, php]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start Prism mock
+        run: |
+          npx -y @stoplight/prism-cli@5 mock -p 4010 --errors "$SPEC" &
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:4010/inventory -H "Authorization: Bearer x" || true)
+            [ "$code" = "200" ] && break || sleep 1
+          done
+
+      - name: Node SDK
+        if: matrix.package == 'node'
+        working-directory: packages/node
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+          MGX_MOCK_URL=http://127.0.0.1:4010 node test/contract.smoke.mjs
+
+      - name: Python SDK
+        if: matrix.package == 'python'
+        working-directory: packages/python
+        run: |
+          python -m pip install -e .
+          MGX_MOCK_URL=http://127.0.0.1:4010 python test/contract_smoke.py
+
+      - name: PHP SDK
+        if: matrix.package == 'php'
+        working-directory: packages/php
+        run: |
+          composer install --no-interaction
+          MGX_MOCK_URL=http://127.0.0.1:4010 php test/contract_smoke.php
+
+  # C# and Java build/test on their own toolchains.
+  build-jvm-dotnet:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [java, dotnet]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Java build
+        if: matrix.package == 'java'
+        working-directory: packages/java
+        run: mvn -q -DskipTests compile
+      - name: .NET build
+        if: matrix.package == 'dotnet'
+        working-directory: packages/dotnet
+        run: dotnet build src/MyGrainExchange.Api

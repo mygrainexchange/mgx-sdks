@@ -1,0 +1,9 @@
+# Files below are hand-written and must survive regeneration.
+overlay/**
+examples/**
+/README.md
+/LICENSE
+/CHANGELOG.md
+/package.json
+/tsconfig.json
+/tsconfig.esm.json

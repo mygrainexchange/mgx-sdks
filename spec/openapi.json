@@ -1,0 +1,3460 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "MGX Enterprise API",
+    "version": "1.0.0",
+    "description": "Public REST API for grain elevators and enterprise buyers. Browse anonymized inventory, place bids, read your team's trades and bids, manage cash bids, subscribe to webhooks, and read market prices. Authenticate with OAuth2 (Login with MGX). Seller identity is never exposed until a trade is paid on both sides.",
+    "contact": {
+      "name": "MGX Developer Support",
+      "url": "https://developers.mygrainexchange.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.mygrainexchange.com/v1",
+      "description": "Production"
+    },
+    {
+      "url": "https://dashboard.mgx.test/v1",
+      "description": "Local (Herd)"
+    }
+  ],
+  "security": [
+    {
+      "oauth2": [
+        "inventory.read"
+      ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "Inventory",
+      "description": "Browse and filter anonymized grain listings."
+    },
+    {
+      "name": "Market",
+      "description": "Commodity reference data, current and historical prices."
+    },
+    {
+      "name": "Bids",
+      "description": "Place bids, read your team's bids, and act on counter-offers."
+    },
+    {
+      "name": "Trades",
+      "description": "Read your team's own completed trades."
+    },
+    {
+      "name": "Teams",
+      "description": "Read the teams the authenticated user belongs to."
+    },
+    {
+      "name": "Cash Bids",
+      "description": "Manage the elevator's own cash bids and their offers."
+    },
+    {
+      "name": "Webhooks",
+      "description": "Subscribe to event notifications and inspect deliveries."
+    }
+  ],
+  "paths": {
+    "/inventory": {
+      "get": {
+        "operationId": "inventoryList",
+        "tags": [
+          "Inventory"
+        ],
+        "summary": "Browse & filter anonymized inventory",
+        "description": "Returns a paged, anonymized list of grain listings. Seller identity, farm name, and exact coordinates are never included.",
+        "security": [
+          {
+            "oauth2": [
+              "inventory.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "commodity",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Commodity slug(s), comma-separated, e.g. wheat,canola."
+          },
+          {
+            "name": "grade",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Grade code, e.g. 1CWRS."
+          },
+          {
+            "name": "min_quantity",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "Minimum tonnes (MT). Interpreted in `?units=` (default MT)."
+          },
+          {
+            "name": "max_quantity",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "Maximum tonnes (MT). Interpreted in `?units=` (default MT)."
+          },
+          {
+            "name": "province",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Coarse location filter, e.g. SK, AB."
+          },
+          {
+            "name": "near",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "lat,lng,radius_km — radius search against coarse city centroids."
+          },
+          {
+            "name": "crop_year",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "is_organic",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "min_protein",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "price",
+                "-price",
+                "quantity",
+                "-quantity",
+                "listed_at",
+                "-listed_at"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          },
+          {
+            "$ref": "#/components/parameters/UnitsParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paging object of inventory",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/inventory/filters": {
+      "get": {
+        "operationId": "inventoryFilters",
+        "tags": [
+          "Inventory"
+        ],
+        "summary": "Facet metadata for filters",
+        "description": "Returns the distinct commodities, grades, provinces, and crop years currently available.",
+        "security": [
+          {
+            "oauth2": [
+              "inventory.read"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Available filter facets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryFilters"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/inventory/{id}": {
+      "get": {
+        "operationId": "inventoryGet",
+        "tags": [
+          "Inventory"
+        ],
+        "summary": "Get one anonymized listing",
+        "security": [
+          {
+            "oauth2": [
+              "inventory.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Public inventory id, e.g. inv_3Kd9aZ."
+          },
+          {
+            "$ref": "#/components/parameters/UnitsParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inventory resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/inventory/{id}/bids": {
+      "post": {
+        "operationId": "bidPlace",
+        "tags": [
+          "Bids"
+        ],
+        "summary": "Place a bid on a listing",
+        "description": "Places a bid on behalf of the authenticated user's team. Requires a user-context (authorization-code) token bound to a team. Send an Idempotency-Key header to make retries safe.",
+        "security": [
+          {
+            "oauth2": [
+              "bids.write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Public inventory id."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Same key + identical body returns the original bid (201); a different body returns 409."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaceBid"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Bid created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BidEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/bids": {
+      "get": {
+        "operationId": "bidList",
+        "tags": [
+          "Bids"
+        ],
+        "summary": "List the team's own bids",
+        "security": [
+          {
+            "oauth2": [
+              "bids.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "accepted",
+                "rejected",
+                "countered",
+                "expired"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          },
+          {
+            "$ref": "#/components/parameters/UnitsParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paging object of bids",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BidPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/bids/{id}": {
+      "get": {
+        "operationId": "bidGet",
+        "tags": [
+          "Bids"
+        ],
+        "summary": "Get one of the team's bids",
+        "security": [
+          {
+            "oauth2": [
+              "bids.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Public bid id, e.g. bid_7Qp2."
+          },
+          {
+            "$ref": "#/components/parameters/UnitsParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bid resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BidEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/bids/{id}/accept": {
+      "post": {
+        "operationId": "bidAccept",
+        "tags": [
+          "Bids"
+        ],
+        "summary": "Accept a counter-offer",
+        "description": "Accepts a counter-offer on one of the team's bids; creates a trade.",
+        "security": [
+          {
+            "oauth2": [
+              "bids.write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bid accepted; trade created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradeEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/bids/{id}/reject": {
+      "post": {
+        "operationId": "bidReject",
+        "tags": [
+          "Bids"
+        ],
+        "summary": "Reject a counter-offer",
+        "security": [
+          {
+            "oauth2": [
+              "bids.write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bid rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BidEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/bids/{id}/counter": {
+      "post": {
+        "operationId": "bidCounter",
+        "tags": [
+          "Bids"
+        ],
+        "summary": "Counter a bid",
+        "security": [
+          {
+            "oauth2": [
+              "bids.write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaceBid"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Counter created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BidEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/market/commodities": {
+      "get": {
+        "operationId": "marketCommodities",
+        "tags": [
+          "Market"
+        ],
+        "summary": "Commodities with market-price coverage",
+        "security": [
+          {
+            "oauth2": [
+              "market.read"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of commodities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketCommodityList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UnitsParam"
+          }
+        ]
+      }
+    },
+    "/market/prices": {
+      "get": {
+        "operationId": "marketPrices",
+        "tags": [
+          "Market"
+        ],
+        "summary": "Market prices, current or as-of a date",
+        "security": [
+          {
+            "oauth2": [
+              "market.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "commodity",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Commodity slug(s), comma-separated."
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Returns the price as-of that date instead of the current price."
+          },
+          {
+            "$ref": "#/components/parameters/UnitsParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prices per commodity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketPriceList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/market/prices/{commodity}/history": {
+      "get": {
+        "operationId": "marketHistory",
+        "tags": [
+          "Market"
+        ],
+        "summary": "Price history for a commodity",
+        "security": [
+          {
+            "oauth2": [
+              "market.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "commodity",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Commodity slug, e.g. wheat."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week"
+              ],
+              "default": "day"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/UnitsParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Time series of prices",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceHistory"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/trades": {
+      "get": {
+        "operationId": "tradeList",
+        "tags": [
+          "Trades"
+        ],
+        "summary": "The team's own trades",
+        "security": [
+          {
+            "oauth2": [
+              "trades.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "commodity",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          },
+          {
+            "$ref": "#/components/parameters/UnitsParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paging object of trades",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/trades/{id}": {
+      "get": {
+        "operationId": "tradeGet",
+        "tags": [
+          "Trades"
+        ],
+        "summary": "Get one of the team's trades",
+        "security": [
+          {
+            "oauth2": [
+              "trades.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Public trade id, e.g. trd_2Ws4."
+          },
+          {
+            "$ref": "#/components/parameters/UnitsParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trade resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradeEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/teams": {
+      "get": {
+        "operationId": "teamList",
+        "tags": [
+          "Teams"
+        ],
+        "summary": "Teams the user belongs to",
+        "security": [
+          {
+            "oauth2": [
+              "teams.read"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of teams with roles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/teams/{id}": {
+      "get": {
+        "operationId": "teamGet",
+        "tags": [
+          "Teams"
+        ],
+        "summary": "Get one team",
+        "security": [
+          {
+            "oauth2": [
+              "teams.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Public team id, e.g. tm_5Lp8."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/cash-bids": {
+      "get": {
+        "operationId": "cashBidList",
+        "tags": [
+          "Cash Bids"
+        ],
+        "summary": "The elevator's own cash bids",
+        "security": [
+          {
+            "oauth2": [
+              "cashbids.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "is_active",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "commodity",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          },
+          {
+            "$ref": "#/components/parameters/UnitsParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paging object of cash bids",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashBidPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "post": {
+        "operationId": "cashBidCreate",
+        "tags": [
+          "Cash Bids"
+        ],
+        "summary": "Publish a cash bid",
+        "security": [
+          {
+            "oauth2": [
+              "cashbids.write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoreCashBid"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Cash bid created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashBidEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/cash-bids/{id}": {
+      "patch": {
+        "operationId": "cashBidUpdate",
+        "tags": [
+          "Cash Bids"
+        ],
+        "summary": "Update a cash bid",
+        "security": [
+          {
+            "oauth2": [
+              "cashbids.write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Public cash bid id, e.g. cb_9Xa1."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCashBid"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated cash bid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashBidEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/cash-bids/{id}/offers": {
+      "get": {
+        "operationId": "cashBidOffers",
+        "tags": [
+          "Cash Bids"
+        ],
+        "summary": "Offers against a cash bid",
+        "description": "Offers received on one of the elevator's cash bids. The offering party is masked until the resulting trade is settled.",
+        "security": [
+          {
+            "oauth2": [
+              "cashbids.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paging object of offers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashBidOfferPage"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/cash-bid-offers/{id}/accept": {
+      "post": {
+        "operationId": "cashBidOfferAccept",
+        "tags": [
+          "Cash Bids"
+        ],
+        "summary": "Accept a cash-bid offer",
+        "security": [
+          {
+            "oauth2": [
+              "cashbids.write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Offer accepted; trade created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradeEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/cash-bid-offers/{id}/reject": {
+      "post": {
+        "operationId": "cashBidOfferReject",
+        "tags": [
+          "Cash Bids"
+        ],
+        "summary": "Reject a cash-bid offer",
+        "security": [
+          {
+            "oauth2": [
+              "cashbids.write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Offer rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashBidOfferEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/webhooks": {
+      "get": {
+        "operationId": "webhookList",
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "List webhook subscriptions",
+        "security": [
+          {
+            "oauth2": [
+              "webhooks.read"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of subscriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "post": {
+        "operationId": "webhookCreate",
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Register a webhook subscription",
+        "description": "Creates a subscription. The signing secret is returned once in the response and never again.",
+        "security": [
+          {
+            "oauth2": [
+              "webhooks.write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Webhook"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Subscription created; secret returned once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookCreatedEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/webhooks/{id}": {
+      "delete": {
+        "operationId": "webhookDelete",
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Delete a webhook subscription",
+        "security": [
+          {
+            "oauth2": [
+              "webhooks.write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/webhooks/{id}/deliveries": {
+      "get": {
+        "operationId": "webhookDeliveries",
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Recent delivery attempts (debugging)",
+        "security": [
+          {
+            "oauth2": [
+              "webhooks.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paging object of delivery records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookDeliveryPage"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/delivery-locations": {
+      "get": {
+        "tags": [
+          "Bids"
+        ],
+        "summary": "List your elevator's delivery locations",
+        "description": "Returns the caller's own elevator delivery locations. Use the integer `id` as `delivery_location_id` when placing a delivered (non-FOB) bid or a cash bid.",
+        "security": [
+          {
+            "oauth2": [
+              "locations.read"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of delivery locations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "formatted": {
+                            "type": "string"
+                          },
+                          "city": {
+                            "type": "string"
+                          },
+                          "province": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/me/farms": {
+      "get": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "List your own farms",
+        "description": "Your own farms. With farms.read the response includes the farm name and coordinates; without it (e.g. an anonymous-submission platform) only an opaque id + coarse location is returned.",
+        "security": [
+          {
+            "oauth2": [
+              "listings.read"
+            ]
+          },
+          {
+            "oauth2": [
+              "farms.read"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of farms"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Create a farm",
+        "security": [
+          {
+            "oauth2": [
+              "farms.write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoreFarm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Farm created"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/me/inventory": {
+      "get": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Your own inventory listings",
+        "security": [
+          {
+            "oauth2": [
+              "listings.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "listed",
+                "unlisted",
+                "archived"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/UnitsParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paging object of the seller's own listings (full detail)"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Submit inventory (anonymized to buyers)",
+        "description": "Creates a listing via the same core the MGX app uses. When list is true (default) it is published to the public anonymized marketplace immediately. Requires a valid payment method on file with MGX, and the listings.* scopes which are granted to approved partners (not self-service). The seller stays anonymous to all buyers until a trade settles.",
+        "security": [
+          {
+            "oauth2": [
+              "listings.write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaceListing"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Listing created (seller's full own view)"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "description": "No payment method on file, or the client is not an approved partner for listings access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/inventory/{id}": {
+      "get": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Get one of your listings",
+        "security": [
+          {
+            "oauth2": [
+              "listings.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/UnitsParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Listing detail"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Update a listing (price, quantity, list/unlist)",
+        "security": [
+          {
+            "oauth2": [
+              "listings.write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated listing"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Archive a listing",
+        "security": [
+          {
+            "oauth2": [
+              "listings.write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archived"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/me/inventory/{id}/bids": {
+      "get": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Bids received on a listing",
+        "description": "Bids buyers placed on your listing. The buyer stays masked until both invoices are paid. Respond with POST /v1/bids/{id}/accept|reject|counter.",
+        "security": [
+          {
+            "oauth2": [
+              "listings.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paging object of received bids"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/me/farms/{id}": {
+      "get": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Get one of your farms (full detail)",
+        "security": [
+          {
+            "oauth2": [
+              "farms.read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Farm detail"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Update a farm",
+        "security": [
+          {
+            "oauth2": [
+              "farms.write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoreFarm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated farm"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "description": "Login with MGX (authorization code + PKCE) for user-context scopes; client credentials for read-only scopes.",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://api.mygrainexchange.com/oauth/authorize",
+            "tokenUrl": "https://api.mygrainexchange.com/oauth/token",
+            "refreshUrl": "https://api.mygrainexchange.com/oauth/token",
+            "scopes": {
+              "inventory.read": "Browse and filter anonymized inventory",
+              "market.read": "Read market commodities, prices, and price history",
+              "bids.read": "Read your team's bids",
+              "bids.write": "Place bids on behalf of your team",
+              "trades.read": "Read your team's trades",
+              "teams.read": "Read the teams you belong to",
+              "cashbids.read": "Read your cash bids and offers",
+              "cashbids.write": "Create and update your cash bids",
+              "webhooks.read": "Read your webhook subscriptions",
+              "webhooks.write": "Manage your webhook subscriptions",
+              "openid": "OpenID Connect sign-in",
+              "profile": "Basic profile information",
+              "email": "Your email address",
+              "listings.read": "Read your own inventory listings and the bids on them",
+              "listings.write": "Submit, update, and archive your inventory listings",
+              "farms.read": "See your farm names and locations",
+              "farms.write": "Create and edit your farms",
+              "locations.read": "Read your elevator delivery locations"
+            }
+          },
+          "clientCredentials": {
+            "tokenUrl": "https://api.mygrainexchange.com/oauth/token",
+            "scopes": {
+              "inventory.read": "Browse and filter anonymized inventory",
+              "market.read": "Read market commodities, prices, and history"
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Missing or invalid token",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "status": 401,
+                "code": "unauthenticated",
+                "message": "Missing or expired token."
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Token lacks the required scope or eligibility",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "status": 403,
+                "code": "insufficient_scope",
+                "message": "This token is missing the required scope."
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "status": 404,
+                "code": "not_found",
+                "message": "Resource not found."
+              }
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Request failed validation",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "status": 422,
+                "code": "validation_failed",
+                "message": "The given data was invalid.",
+                "errors": [
+                  {
+                    "field": "quantity_mt",
+                    "message": "The quantity mt must be at least 0.01."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "description": "Error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "status",
+              "code",
+              "message"
+            ],
+            "properties": {
+              "status": {
+                "type": "integer",
+                "example": 422
+              },
+              "code": {
+                "type": "string",
+                "example": "validation_failed"
+              },
+              "message": {
+                "type": "string"
+              },
+              "errors": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Deleted": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "deleted": {
+                "type": "boolean",
+                "example": true
+              },
+              "id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Money": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "example": 312.5
+          },
+          "currency": {
+            "type": "string",
+            "example": "CAD"
+          },
+          "unit": {
+            "type": "string",
+            "example": "MT"
+          },
+          "firm": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Present on asking prices; true when the price is firm."
+          }
+        }
+      },
+      "Commodity": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "wheat"
+          },
+          "name": {
+            "type": "string",
+            "example": "Wheat"
+          }
+        }
+      },
+      "Quality": {
+        "type": "object",
+        "description": "Non-identifying seller quality claims. All fields are optional.",
+        "properties": {
+          "protein": {
+            "type": "number",
+            "nullable": true,
+            "example": 13.8
+          },
+          "moisture": {
+            "type": "number",
+            "nullable": true,
+            "example": 12.1
+          },
+          "test_weight": {
+            "type": "number",
+            "nullable": true
+          },
+          "dockage": {
+            "type": "number",
+            "nullable": true
+          },
+          "falling_number": {
+            "type": "number",
+            "nullable": true
+          }
+        }
+      },
+      "Location": {
+        "type": "object",
+        "description": "Coarse location only — province + nearest city. Never the farm name or exact coordinates.",
+        "properties": {
+          "province": {
+            "type": "string",
+            "example": "SK"
+          },
+          "nearest_city": {
+            "type": "string",
+            "example": "Saskatoon"
+          }
+        }
+      },
+      "DateWindow": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "Page": {
+        "type": "object",
+        "description": "Shared offset-pagination envelope.",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "example": 20
+          },
+          "offset": {
+            "type": "integer",
+            "example": 0
+          },
+          "total": {
+            "type": "integer",
+            "example": 214
+          },
+          "next": {
+            "type": "string",
+            "nullable": true
+          },
+          "previous": {
+            "type": "string",
+            "nullable": true
+          },
+          "href": {
+            "type": "string"
+          }
+        }
+      },
+      "Inventory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "inv_3Kd9aZ"
+          },
+          "commodity": {
+            "$ref": "#/components/schemas/Commodity"
+          },
+          "variety": {
+            "type": "string",
+            "nullable": true
+          },
+          "grade": {
+            "type": "string",
+            "nullable": true,
+            "example": "1CWRS"
+          },
+          "is_organic": {
+            "type": "boolean"
+          },
+          "crop_year": {
+            "type": "integer",
+            "nullable": true,
+            "example": 2025
+          },
+          "quantity_mt": {
+            "type": "number",
+            "example": 86.0
+          },
+          "quantity": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Quantity"
+              }
+            ],
+            "description": "The same quantity rendered in the `?units=` unit (defaults to MT). `quantity_mt` is always MT."
+          },
+          "asking_price": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ],
+            "nullable": true
+          },
+          "quality": {
+            "$ref": "#/components/schemas/Quality"
+          },
+          "location": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Location"
+              }
+            ],
+            "nullable": true
+          },
+          "listed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "InventoryEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Inventory"
+          }
+        }
+      },
+      "InventoryPage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Page"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Inventory"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "InventoryFilters": {
+        "type": "object",
+        "properties": {
+          "commodities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Commodity"
+            }
+          },
+          "grades": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "provinces": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "crop_years": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "PlaceBid": {
+        "type": "object",
+        "required": [
+          "delivery"
+        ],
+        "properties": {
+          "price": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ],
+            "description": "Single price for verified inventory. Use bids[] for unverified inventory instead."
+          },
+          "bids": {
+            "type": "array",
+            "description": "Per-grade prices for unverified inventory.",
+            "items": {
+              "type": "object",
+              "required": [
+                "grade",
+                "price"
+              ],
+              "properties": {
+                "grade": {
+                  "type": "string"
+                },
+                "price": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "grading_type": {
+            "type": "string",
+            "enum": [
+              "Third-Party",
+              "In-House"
+            ]
+          },
+          "quantity_mt": {
+            "type": "number",
+            "example": 50,
+            "description": "Quantity in metric tons. Optional if `quantity` + `unit` are sent instead."
+          },
+          "delivery": {
+            "$ref": "#/components/schemas/DateWindow"
+          },
+          "fob_farm": {
+            "type": "boolean"
+          },
+          "delivery_location_id": {
+            "type": "integer"
+          },
+          "subject_to_sample_approval": {
+            "type": "boolean"
+          },
+          "includes_net_handling_fees": {
+            "type": "boolean"
+          },
+          "additional_terms": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 0.01,
+            "description": "Quantity in `unit`; an alternative to `quantity_mt`. Send either `quantity_mt` (always MT) or `quantity` + `unit`."
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "mt",
+              "t",
+              "bu",
+              "lb",
+              "kg"
+            ],
+            "description": "Unit for `quantity` (default mt)."
+          }
+        }
+      },
+      "Bid": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "bid_7Qp2"
+          },
+          "reference": {
+            "type": "string",
+            "example": "BID-001"
+          },
+          "inventory_id": {
+            "type": "string",
+            "example": "inv_3Kd9aZ"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "rejected",
+              "countered",
+              "expired"
+            ]
+          },
+          "price": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ],
+            "nullable": true
+          },
+          "grades": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "object",
+              "properties": {
+                "grade": {
+                  "type": "string"
+                },
+                "price": {
+                  "$ref": "#/components/schemas/Money"
+                }
+              }
+            }
+          },
+          "quantity_mt": {
+            "type": "number"
+          },
+          "quantity": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Quantity"
+              }
+            ],
+            "description": "The same quantity rendered in the `?units=` unit (defaults to MT). `quantity_mt` is always MT."
+          },
+          "delivery": {
+            "$ref": "#/components/schemas/DateWindow"
+          },
+          "subject_to_sample_approval": {
+            "type": "boolean"
+          },
+          "fob_farm": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "counterparty": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Counterparty"
+              }
+            ],
+            "nullable": true,
+            "description": "Null until both invoices on the resulting trade are paid."
+          }
+        }
+      },
+      "BidEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Bid"
+          }
+        }
+      },
+      "BidPage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Page"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Bid"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "Counterparty": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "John Doe"
+          }
+        }
+      },
+      "Trade": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "trd_2Ws4"
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "buyer",
+              "seller"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "commodity": {
+            "$ref": "#/components/schemas/Commodity"
+          },
+          "quantity_mt": {
+            "type": "number"
+          },
+          "quantity": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Quantity"
+              }
+            ],
+            "description": "The same quantity rendered in the `?units=` unit (defaults to MT). `quantity_mt` is always MT."
+          },
+          "price": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ],
+            "nullable": true
+          },
+          "counterparty": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Counterparty"
+              }
+            ],
+            "nullable": true,
+            "description": "Null until both invoices are paid."
+          },
+          "settled_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TradeEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Trade"
+          }
+        }
+      },
+      "TradePage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Page"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Trade"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "Team": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "tm_5Lp8"
+          },
+          "name": {
+            "type": "string",
+            "example": "Acme Corp Buying"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "member"
+            ]
+          },
+          "member_count": {
+            "type": "integer",
+            "example": 3
+          }
+        }
+      },
+      "TeamEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Team"
+          }
+        }
+      },
+      "TeamList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Team"
+            }
+          }
+        }
+      },
+      "StoreCashBid": {
+        "type": "object",
+        "required": [
+          "commodity",
+          "price",
+          "delivery"
+        ],
+        "properties": {
+          "commodity": {
+            "type": "string",
+            "example": "canola"
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "quantity_mt": {
+            "type": "number",
+            "description": "Quantity in metric tons. Optional if `quantity` + `unit` are sent instead."
+          },
+          "delivery": {
+            "type": "object",
+            "required": [
+              "start",
+              "end"
+            ],
+            "properties": {
+              "start": {
+                "type": "string",
+                "format": "date"
+              },
+              "end": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          },
+          "delivery_location_id": {
+            "type": "integer"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date"
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 0.01,
+            "description": "Quantity in `unit`; an alternative to `quantity_mt`. Send either `quantity_mt` (always MT) or `quantity` + `unit`."
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "mt",
+              "t",
+              "bu",
+              "lb",
+              "kg"
+            ],
+            "description": "Unit for `quantity` (default mt)."
+          }
+        }
+      },
+      "UpdateCashBid": {
+        "type": "object",
+        "properties": {
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "quantity_mt": {
+            "type": "number"
+          },
+          "delivery": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "format": "date"
+              },
+              "end": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          },
+          "delivery_location_id": {
+            "type": "integer"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date"
+          },
+          "is_active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CashBid": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "cb_9Xa1"
+          },
+          "identifier": {
+            "type": "string",
+            "example": "CB-001"
+          },
+          "commodity": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Commodity"
+              }
+            ],
+            "nullable": true
+          },
+          "price": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ],
+            "nullable": true
+          },
+          "quantity_mt": {
+            "type": "number"
+          },
+          "quantity": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Quantity"
+              }
+            ],
+            "description": "The same quantity rendered in the `?units=` unit (defaults to MT). `quantity_mt` is always MT."
+          },
+          "delivery_location_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "location": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Location"
+              }
+            ],
+            "nullable": true
+          },
+          "delivery": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "format": "date"
+              },
+              "end": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          }
+        }
+      },
+      "CashBidEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CashBid"
+          }
+        }
+      },
+      "CashBidPage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Page"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CashBid"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "CashBidOffer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "cbo_4Tn7"
+          },
+          "cash_bid_id": {
+            "type": "string",
+            "example": "cb_9Xa1"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "rejected",
+              "expired"
+            ]
+          },
+          "price": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ],
+            "nullable": true
+          },
+          "quantity_mt": {
+            "type": "number"
+          },
+          "counterparty": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Counterparty"
+              }
+            ],
+            "nullable": true,
+            "description": "Masked until the resulting trade settles."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CashBidOfferEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CashBidOffer"
+          }
+        }
+      },
+      "CashBidOfferPage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Page"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CashBidOffer"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "MarketCommodity": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "wheat"
+          },
+          "name": {
+            "type": "string",
+            "example": "Wheat"
+          },
+          "unit": {
+            "type": "string",
+            "example": "MT"
+          },
+          "currency": {
+            "type": "string",
+            "example": "CAD"
+          },
+          "has_history": {
+            "type": "boolean"
+          },
+          "market_price_updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "MarketCommodityList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketCommodity"
+            }
+          }
+        }
+      },
+      "MarketPrice": {
+        "type": "object",
+        "properties": {
+          "commodity": {
+            "$ref": "#/components/schemas/Commodity"
+          },
+          "price": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ],
+            "nullable": true
+          },
+          "previous": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ],
+            "nullable": true
+          },
+          "change_pct": {
+            "type": "number",
+            "nullable": true,
+            "example": 1.4
+          },
+          "range": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "low": {
+                "type": "number"
+              },
+              "high": {
+                "type": "number"
+              }
+            }
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "MarketPriceList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketPrice"
+            }
+          }
+        }
+      },
+      "PriceHistory": {
+        "type": "object",
+        "properties": {
+          "commodity": {
+            "$ref": "#/components/schemas/Commodity"
+          },
+          "interval": {
+            "type": "string",
+            "enum": [
+              "day",
+              "week"
+            ]
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "price": {
+                  "type": "number"
+                },
+                "source": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "mt",
+              "t",
+              "bu",
+              "lb",
+              "kg"
+            ],
+            "description": "Unit the price points are rendered in."
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO currency code for the price points."
+          }
+        }
+      },
+      "Webhook": {
+        "type": "object",
+        "required": [
+          "url",
+          "events"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "bid.accepted",
+                "bid.rejected",
+                "bid.countered",
+                "trade.created",
+                "trade.settled",
+                "cashbid.offer_received",
+                "inventory.matched"
+              ]
+            }
+          }
+        }
+      },
+      "WebhookResource": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "wh_8Hk3"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "WebhookCreated": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/WebhookResource"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "secret": {
+                "type": "string",
+                "description": "Signing secret — shown once, store it now.",
+                "example": "whsec_…"
+              }
+            }
+          }
+        ]
+      },
+      "WebhookCreatedEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/WebhookCreated"
+          }
+        }
+      },
+      "WebhookList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebhookResource"
+            }
+          }
+        }
+      },
+      "WebhookEventType": {
+        "type": "string",
+        "enum": [
+          "bid.accepted",
+          "bid.rejected",
+          "bid.countered",
+          "trade.created",
+          "trade.settled",
+          "cashbid.offer_received",
+          "inventory.matched"
+        ]
+      },
+      "WebhookEvent": {
+        "type": "object",
+        "description": "The payload delivered to a webhook endpoint. Verify its signature with the SDK's webhooks.verify() helper before trusting it.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "evt_6Yh2"
+          },
+          "type": {
+            "$ref": "#/components/schemas/WebhookEventType"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "data": {
+            "type": "object",
+            "description": "The resource for this event (e.g. a Trade for trade.created, a CashBidOffer for cashbid.offer_received). Counterparty fields stay masked until a trade settles.",
+            "additionalProperties": true
+          }
+        }
+      },
+      "WebhookDelivery": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "whd_2Bv9"
+          },
+          "event": {
+            "type": "string",
+            "example": "trade.created"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "succeeded",
+              "failed"
+            ]
+          },
+          "response_code": {
+            "type": "integer",
+            "nullable": true
+          },
+          "attempted_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "payload": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/WebhookEvent"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "WebhookDeliveryPage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Page"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/WebhookDelivery"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "PlaceListing": {
+        "type": "object",
+        "required": [
+          "commodity",
+          "farm_id"
+        ],
+        "properties": {
+          "commodity": {
+            "type": "string",
+            "example": "wheat"
+          },
+          "farm_id": {
+            "type": "string",
+            "description": "One of your farm ids from GET /v1/me/farms."
+          },
+          "quantity_mt": {
+            "type": "number",
+            "description": "Quantity in metric tons. Optional if `quantity` + `unit` are sent instead."
+          },
+          "variety": {
+            "type": "string"
+          },
+          "crop_year": {
+            "type": "integer"
+          },
+          "grade": {
+            "type": "string",
+            "description": "Estimated grade name, e.g. 1CWRS."
+          },
+          "target_price": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number"
+              },
+              "firm": {
+                "type": "boolean"
+              }
+            }
+          },
+          "is_organic": {
+            "type": "boolean"
+          },
+          "quality": {
+            "type": "object",
+            "properties": {
+              "protein": {
+                "type": "number"
+              },
+              "moisture": {
+                "type": "number"
+              },
+              "test_weight": {
+                "type": "number"
+              },
+              "dockage": {
+                "type": "number"
+              },
+              "falling_number": {
+                "type": "integer"
+              }
+            }
+          },
+          "seller_notes": {
+            "type": "string"
+          },
+          "list": {
+            "type": "boolean",
+            "description": "Publish to the marketplace immediately (default true)."
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 0.01,
+            "description": "Quantity in `unit`; an alternative to `quantity_mt`. Send either `quantity_mt` (always MT) or `quantity` + `unit`."
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "mt",
+              "t",
+              "bu",
+              "lb",
+              "kg"
+            ],
+            "description": "Unit for `quantity` (default mt)."
+          }
+        }
+      },
+      "StoreFarm": {
+        "type": "object",
+        "required": [
+          "name",
+          "latitude",
+          "longitude",
+          "nearest_city",
+          "nearest_province"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "nearest_city": {
+            "type": "string"
+          },
+          "nearest_province": {
+            "type": "string"
+          }
+        }
+      },
+      "Quantity": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Amount in `unit`. Null when a bushel view is requested for a commodity with no configured bushel weight."
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "mt",
+              "t",
+              "bu",
+              "lb",
+              "kg"
+            ]
+          }
+        }
+      }
+    },
+    "parameters": {
+      "UnitsParam": {
+        "name": "units",
+        "in": "query",
+        "description": "Unit for quantity values (and price values on market endpoints): mt (default), t = US short ton, bu = commodity-specific bushels, lb, kg. Bushel views require a single-commodity context.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "mt",
+            "t",
+            "bu",
+            "lb",
+            "kg"
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,93 @@
+name: release
+
+# Publishes every SDK to its registry on a version tag (or a manual run). Each
+# package is built from the committed generated code + overlay; nothing is
+# regenerated here (regeneration + drift review happens upstream — see the
+# monorepo sdk-drift workflow).
+#
+# Each job GRACEFULLY SKIPS publishing when its registry secret is absent, so you
+# can enable registries one at a time as you set up each account/token. See
+# RELEASING.md for the secrets and the release steps.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+jobs:
+  npm:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: packages/node } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", registry-url: "https://registry.npmjs.org" }
+      - run: npm install --no-audit --no-fund && npm run build
+      - name: Publish to npm
+        env: { NODE_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}" }
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then echo "::notice::NPM_TOKEN not set — skipping npm publish"; exit 0; fi
+          npm publish --access public
+
+  pypi:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: packages/python } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: python -m pip install build twine && python -m build
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: "${{ secrets.PYPI_TOKEN }}"
+        run: |
+          if [ -z "$TWINE_PASSWORD" ]; then echo "::notice::PYPI_TOKEN not set — skipping PyPI upload"; exit 0; fi
+          twine upload --non-interactive dist/*
+
+  nuget:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: packages/dotnet } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: "8.0.x" }
+      - run: dotnet pack src/MyGrainExchange.Api -c Release -o out
+      - name: Publish to NuGet
+        env: { NUGET_API_KEY: "${{ secrets.NUGET_API_KEY }}" }
+        run: |
+          if [ -z "$NUGET_API_KEY" ]; then echo "::notice::NUGET_API_KEY not set — skipping NuGet push"; exit 0; fi
+          dotnet nuget push "out/*.nupkg" -k "$NUGET_API_KEY" -s https://api.nuget.org/v3/index.json --skip-duplicate
+
+  maven:
+    runs-on: ubuntu-latest
+    # Maven Central needs the most setup (Sonatype namespace + GPG key) — see
+    # RELEASING.md. Soft-fails so it never blocks the other registries.
+    continue-on-error: true
+    defaults: { run: { working-directory: packages/java } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: "temurin", java-version: "17" }
+      - name: Publish to Maven Central
+        env:
+          OSSRH_USERNAME: "${{ secrets.OSSRH_USERNAME }}"
+          OSSRH_PASSWORD: "${{ secrets.OSSRH_PASSWORD }}"
+          MAVEN_GPG_PASSPHRASE: "${{ secrets.MAVEN_GPG_PASSPHRASE }}"
+          MAVEN_GPG_KEY: "${{ secrets.MAVEN_GPG_KEY }}"
+        run: |
+          if [ -z "$OSSRH_USERNAME" ]; then echo "::notice::OSSRH_USERNAME not set — skipping Maven deploy"; exit 0; fi
+          if [ -n "$MAVEN_GPG_KEY" ]; then echo "$MAVEN_GPG_KEY" | gpg --batch --import; fi
+          mvn -q -DskipTests -P sign-artifacts deploy -s ../../.github/maven-settings.xml
+
+  packagist:
+    # Packagist publishes from the Git tag via its webhook; this job pings it.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Packagist
+        env: { PACKAGIST_TOKEN: "${{ secrets.PACKAGIST_TOKEN }}" }
+        run: |
+          if [ -z "$PACKAGIST_TOKEN" ]; then echo "::notice::PACKAGIST_TOKEN not set — skipping Packagist update"; exit 0; fi
+          curl -sf -XPOST -H'content-type:application/json' \
+            "https://packagist.org/api/update-package?username=mygrainexchange&apiToken=${PACKAGIST_TOKEN}" \
+            -d '{"repository":{"url":"https://github.com/mygrainexchange/mgx-sdks"}}'

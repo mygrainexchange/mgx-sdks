@@ -1,0 +1,8 @@
+# Files below are hand-written and must survive regeneration.
+overlay/**
+examples/**
+/README.md
+/LICENSE
+/CHANGELOG.md
+# The Java overlay lives in the Maven source tree so the generated pom compiles it.
+src/main/java/com/mygrainexchange/mgx/overlay/**

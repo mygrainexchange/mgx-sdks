@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Maven settings used by the release workflow. Credentials come from CI
+     secrets (OSSRH_USERNAME / OSSRH_PASSWORD) via environment variables. The
+     server id must match the repository id in packages/java/pom.xml's
+     <distributionManagement>. -->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+  <servers>
+    <server>
+      <id>ossrh</id>
+      <username>${env.OSSRH_USERNAME}</username>
+      <password>${env.OSSRH_PASSWORD}</password>
+    </server>
+    <server>
+      <id>central</id>
+      <username>${env.OSSRH_USERNAME}</username>
+      <password>${env.OSSRH_PASSWORD}</password>
+    </server>
+  </servers>
+  <profiles>
+    <profile>
+      <id>sign-artifacts</id>
+      <properties>
+        <gpg.passphrase>${env.MAVEN_GPG_PASSPHRASE}</gpg.passphrase>
+      </properties>
+    </profile>
+  </profiles>
+</settings>

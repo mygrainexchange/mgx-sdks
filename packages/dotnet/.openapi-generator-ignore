@@ -1,0 +1,11 @@
+# Files below are hand-written and must survive regeneration.
+overlay/**
+# C# overlay lives inside the project's compile glob so it ships in the same
+# assembly/NuGet package. Protect it from regeneration here.
+src/MyGrainExchange.Api/Overlay/**
+examples/**
+/README.md
+/LICENSE
+/CHANGELOG.md
+# The generator mints a fresh GUID in the .sln each run — pin it so regen is deterministic.
+/MyGrainExchange.Api.sln

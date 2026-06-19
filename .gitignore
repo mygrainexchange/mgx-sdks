@@ -1,0 +1,24 @@
+# Node
+node_modules/
+packages/*/dist/
+packages/*/node_modules/
+
+# Python
+packages/python/.venv/
+packages/python/build/
+packages/python/dist/
+packages/python/*.egg-info/
+__pycache__/
+
+# PHP
+packages/php/vendor/
+
+# Java
+packages/java/target/
+
+# .NET
+packages/dotnet/**/bin/
+packages/dotnet/**/obj/
+
+# OpenAPI Generator bookkeeping
+packages/*/.openapi-generator/

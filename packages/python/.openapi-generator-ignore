@@ -1,0 +1,10 @@
+# Files below are hand-written and must survive regeneration.
+overlay/**
+mgx/overlay/**
+examples/**
+test/contract_smoke.py
+/README.md
+/LICENSE
+/CHANGELOG.md
+# Hand-fixed license metadata (generator emits an invalid "NoLicense").
+/pyproject.toml
