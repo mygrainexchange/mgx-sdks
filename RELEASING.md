@@ -19,14 +19,18 @@ Add only the ones you're ready to use; the rest are skipped.
 | **npm** | `@mygrainexchange/sdk` | `NPM_TOKEN` | npmjs.com → Access Tokens → **Automation** token (publish to the `@mygrainexchange` org) |
 | **PyPI** | `mgx` | *(none — OIDC)* | **Trusted publishing**, no token. Add a GitHub publisher on PyPI: project `mgx`, owner `mygrainexchange`, repo `mgx-sdks`, workflow `release.yml`, environment `pypi`. Create a matching GitHub **Environment** named `pypi` (repo → Settings → Environments). |
 | **NuGet** | `MyGrainExchange.Api` | *(none — OIDC)* | **Trusted publishing**, no key. On nuget.org create a trusted-publishing policy (owner `mygrainexchange`, repo `mgx-sdks`, workflow `release.yml`). Add a repo **Variable** `NUGET_USER` = your nuget.org username, and a GitHub **Environment** named `nuget`. |
-| **Packagist** | `mygrainexchange/mgx-php` | `PACKAGIST_TOKEN` | packagist.org → Profile → Show API Token (and register the package once, below) |
+| **Packagist** | `mygrainexchange/mgx-php` | `PACKAGIST_TOKEN`, `MGX_PHP_SPLIT_TOKEN` | `packages/php` is split into the standalone repo `mygrainexchange/mgx-php` on each tag (Packagist can't read a subdir). See below. |
 | **Maven Central** | `io.github.mygrainexchange:mgx-sdk` | `OSSRH_USERNAME`, `OSSRH_PASSWORD`, `MAVEN_GPG_KEY`, `MAVEN_GPG_PASSPHRASE` | Sonatype **Central Portal** token (server id `central`) + a GPG key. Namespace `io.github.mygrainexchange` (GitHub-verified). Publishes via `central-publishing-maven-plugin` in the pom. |
 
-### Packagist (one-time)
-Submit the repo once at packagist.org/packages/submit (URL
-`https://github.com/mygrainexchange/mgx-sdks`). After that the `release` job's
-API ping tells Packagist to re-read tags. Packagist serves the `packages/php`
-package straight from the Git tag — no artifact upload.
+### Packagist + PHP split repo (one-time)
+Packagist requires `composer.json` at the repo root and can't read a monorepo
+subdirectory. So the `release` workflow's `split-php` job mirrors `packages/php`
+into a standalone repo **`mygrainexchange/mgx-php`** (composer.json at root) on each
+`v*` tag, and Packagist points at that repo.
+1. Create an empty GitHub repo `mygrainexchange/mgx-php`.
+2. Create a PAT with **write** access to `mgx-php`, store it as secret `MGX_PHP_SPLIT_TOKEN`.
+3. After the first tag (which populates `mgx-php`), submit **`https://github.com/mygrainexchange/mgx-php`**
+   at packagist.org/packages/submit. Add `PACKAGIST_TOKEN` so later tags auto-refresh it.
 
 ### Maven Central (most involved)
 Publishes to the Sonatype **Central Portal** under the GitHub-verified namespace

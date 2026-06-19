@@ -255,7 +255,7 @@ public final class MgxClient {
                 InventoryPage page = inventoryApi.inventoryList(
                         filters.commodity, filters.grade, filters.minQuantity, filters.maxQuantity,
                         filters.province, filters.near, filters.cropYear, filters.isOrganic,
-                        filters.minProtein, filters.sort, filters.limit, offset);
+                        filters.minProtein, filters.sort, filters.limit, offset, null);
                 return new Pagination.PageLike<Inventory>() {
                     public List<Inventory> getItems() {
                         return page.getItems();
@@ -269,7 +269,7 @@ public final class MgxClient {
         }
 
         public Inventory get(String id) {
-            return unwrap(() -> inventoryApi.inventoryGet(id)).getData();
+            return unwrap(() -> inventoryApi.inventoryGet(id, null)).getData();
         }
 
         public InventoryFilters filters() {
@@ -288,7 +288,7 @@ public final class MgxClient {
     /** Market resource. */
     public final class Market$ {
         public List<MarketCommodity> commodities() {
-            List<MarketCommodity> items = unwrap(marketApi::marketCommodities).getItems();
+            List<MarketCommodity> items = unwrap(() -> marketApi.marketCommodities(null)).getItems();
             return items != null ? items : Collections.emptyList();
         }
 
@@ -297,7 +297,7 @@ public final class MgxClient {
         }
 
         public List<MarketPrice> prices(String commodity, LocalDate date) {
-            List<MarketPrice> items = unwrap(() -> marketApi.marketPrices(commodity, date)).getItems();
+            List<MarketPrice> items = unwrap(() -> marketApi.marketPrices(commodity, date, null)).getItems();
             return items != null ? items : Collections.emptyList();
         }
 
@@ -306,7 +306,7 @@ public final class MgxClient {
         }
 
         public PriceHistory history(String commodity, LocalDate from, LocalDate to, String interval) {
-            return unwrap(() -> marketApi.marketHistory(commodity, from, to, interval));
+            return unwrap(() -> marketApi.marketHistory(commodity, from, to, interval, null));
         }
     }
 
@@ -318,7 +318,7 @@ public final class MgxClient {
 
         public Pagination<Bid> list(String status) {
             return new Pagination<>(offset -> {
-                BidPage page = bidsApi.bidList(status, null, offset);
+                BidPage page = bidsApi.bidList(status, null, offset, null);
                 return new Pagination.PageLike<Bid>() {
                     public List<Bid> getItems() {
                         return page.getItems();
@@ -332,7 +332,7 @@ public final class MgxClient {
         }
 
         public Bid get(String id) {
-            return unwrap(() -> bidsApi.bidGet(id)).getData();
+            return unwrap(() -> bidsApi.bidGet(id, null)).getData();
         }
 
         public Trade accept(String id) {
@@ -358,7 +358,7 @@ public final class MgxClient {
             final TradeListFilters filters = f != null ? f : new TradeListFilters();
             return new Pagination<>(offset -> {
                 TradePage page = tradesApi.tradeList(
-                        filters.status, filters.commodity, filters.from, filters.to, filters.limit, offset);
+                        filters.status, filters.commodity, filters.from, filters.to, filters.limit, offset, null);
                 return new Pagination.PageLike<Trade>() {
                     public List<Trade> getItems() {
                         return page.getItems();
@@ -372,7 +372,7 @@ public final class MgxClient {
         }
 
         public Trade get(String id) {
-            return unwrap(() -> tradesApi.tradeGet(id)).getData();
+            return unwrap(() -> tradesApi.tradeGet(id, null)).getData();
         }
     }
 
@@ -397,7 +397,7 @@ public final class MgxClient {
         public Pagination<CashBid> list(CashBidListFilters f) {
             final CashBidListFilters filters = f != null ? f : new CashBidListFilters();
             return new Pagination<>(offset -> {
-                CashBidPage page = cashBidsApi.cashBidList(filters.isActive, filters.commodity, filters.limit, offset);
+                CashBidPage page = cashBidsApi.cashBidList(filters.isActive, filters.commodity, filters.limit, offset, null);
                 return new Pagination.PageLike<CashBid>() {
                     public List<CashBid> getItems() {
                         return page.getItems();

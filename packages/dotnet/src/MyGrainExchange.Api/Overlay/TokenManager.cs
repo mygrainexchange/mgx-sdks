@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 
 namespace MyGrainExchange.Api.Overlay
 {
-    /// <summary>Authentication inputs for <see cref="MgxClient"/>.</summary>
-    public sealed class AuthOptions
+    /// <summary>Authentication inputs for <see cref="MgxClient"/>. Not sealed: MgxClientOptions extends it.</summary>
+    public class AuthOptions
     {
         /// <summary>OAuth2 client id (client-credentials or authorization-code app).</summary>
         public string ClientId { get; set; }

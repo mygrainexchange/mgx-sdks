@@ -67,7 +67,7 @@ jobs:
         uses: NuGet/login@v1
         id: nuget-login
         with:
-          user: "${{ vars.NUGET_USER }}"
+          user: "${{ secrets.NUGET_USER }}"
       - name: Publish to NuGet
         run: dotnet nuget push "out/*.nupkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" -s https://api.nuget.org/v3/index.json --skip-duplicate
 
@@ -92,8 +92,43 @@ jobs:
           if [ -n "$MAVEN_GPG_KEY" ]; then echo "$MAVEN_GPG_KEY" | gpg --batch --import; fi
           mvn -q -DskipTests -P sign-artifacts deploy -s ../../.github/maven-settings.xml
 
+  # Packagist can't read a package from a subdirectory, so mirror packages/php into
+  # the standalone read-only repo mygrainexchange/mgx-php (composer.json at root) on
+  # each tag. Packagist points at THAT repo. Needs MGX_PHP_SPLIT_TOKEN (a PAT with
+  # write access to mgx-php). Soft-fails so it never blocks the other registries.
+  split-php:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Check for split token
+        id: check
+        env: { TOKEN: "${{ secrets.MGX_PHP_SPLIT_TOKEN }}" }
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::notice::MGX_PHP_SPLIT_TOKEN not set — skipping PHP split"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Split packages/php -> mygrainexchange/mgx-php
+        if: steps.check.outputs.ok == 'true'
+        uses: symplify/monorepo-split-github-action@v2.3.0
+        env:
+          GITHUB_TOKEN: "${{ secrets.MGX_PHP_SPLIT_TOKEN }}"
+        with:
+          tag: ${{ github.ref_name }}
+          package_directory: packages/php
+          repository_organization: mygrainexchange
+          repository_name: mgx-php
+          user_name: MGX
+          user_email: dev@mygrainexchange.com
+
   packagist:
-    # Packagist publishes from the Git tag via its webhook; this job pings it.
+    # Pings Packagist to re-read the split repo (mgx-php) after the split.
+    needs: split-php
     runs-on: ubuntu-latest
     steps:
       - name: Notify Packagist
@@ -102,4 +137,5 @@ jobs:
           if [ -z "$PACKAGIST_TOKEN" ]; then echo "::notice::PACKAGIST_TOKEN not set — skipping Packagist update"; exit 0; fi
           curl -sf -XPOST -H'content-type:application/json' \
             "https://packagist.org/api/update-package?username=mygrainexchange&apiToken=${PACKAGIST_TOKEN}" \
-            -d '{"repository":{"url":"https://github.com/mygrainexchange/mgx-sdks"}}'
+            -d '{"repository":{"url":"https://github.com/mygrainexchange/mgx-php"}}' \
+            || echo "::warning::Packagist update failed — submit https://github.com/mygrainexchange/mgx-php once at https://packagist.org/packages/submit, and confirm the username matches your Packagist account."
