@@ -90,7 +90,7 @@ jobs:
         run: |
           if [ -z "$OSSRH_USERNAME" ]; then echo "::notice::OSSRH_USERNAME not set — skipping Maven deploy"; exit 0; fi
           if [ -n "$MAVEN_GPG_KEY" ]; then echo "$MAVEN_GPG_KEY" | gpg --batch --import; fi
-          mvn -q -DskipTests -P sign-artifacts deploy -s ../../.github/maven-settings.xml
+          mvn -q -Dmaven.test.skip=true -P sign-artifacts deploy -s ../../.github/maven-settings.xml
 
   # Packagist can't read a package from a subdirectory, so mirror packages/php into
   # the standalone read-only repo mygrainexchange/mgx-php (composer.json at root) on

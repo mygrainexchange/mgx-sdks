@@ -8,3 +8,5 @@ examples/**
 src/main/java/com/mygrainexchange/mgx/overlay/**
 # pom is hand-owned: Central Portal publishing config + io.github groupId + real metadata.
 /pom.xml
+# No generated test stubs (they don't overwrite, so they go stale and break builds).
+src/test/**
