@@ -18,6 +18,8 @@ __version__ = "1.0.0"
 
 # Define package exports
 __all__ = [
+    "AnalysisApi",
+    "AuthenticationApi",
     "BidsApi",
     "CashBidsApi",
     "InventoryApi",
@@ -35,6 +37,12 @@ __all__ = [
     "ApiKeyError",
     "ApiAttributeError",
     "ApiException",
+    "Analysis",
+    "AnalysisEnvelope",
+    "AnalysisPhotosInner",
+    "AnalysisResult",
+    "AnalysisType",
+    "AnalysisTypeList",
     "Bid",
     "BidEnvelope",
     "BidGradesInner",
@@ -66,6 +74,9 @@ __all__ = [
     "MarketPriceList",
     "MarketPriceRange",
     "Money",
+    "OauthRevokePost200Response",
+    "OauthTokenPost200Response",
+    "OauthTokenPost400Response",
     "Page",
     "PlaceBid",
     "PlaceBidBidsInner",
@@ -76,6 +87,7 @@ __all__ = [
     "PriceHistoryPointsInner",
     "Quality",
     "Quantity",
+    "RequestAnalysis",
     "StoreCashBid",
     "StoreCashBidDelivery",
     "StoreFarm",
@@ -99,6 +111,8 @@ __all__ = [
 ]
 
 # import apis into sdk package
+from mgx.api.analysis_api import AnalysisApi as AnalysisApi
+from mgx.api.authentication_api import AuthenticationApi as AuthenticationApi
 from mgx.api.bids_api import BidsApi as BidsApi
 from mgx.api.cash_bids_api import CashBidsApi as CashBidsApi
 from mgx.api.inventory_api import InventoryApi as InventoryApi
@@ -120,6 +134,12 @@ from mgx.exceptions import ApiAttributeError as ApiAttributeError
 from mgx.exceptions import ApiException as ApiException
 
 # import models into sdk package
+from mgx.models.analysis import Analysis as Analysis
+from mgx.models.analysis_envelope import AnalysisEnvelope as AnalysisEnvelope
+from mgx.models.analysis_photos_inner import AnalysisPhotosInner as AnalysisPhotosInner
+from mgx.models.analysis_result import AnalysisResult as AnalysisResult
+from mgx.models.analysis_type import AnalysisType as AnalysisType
+from mgx.models.analysis_type_list import AnalysisTypeList as AnalysisTypeList
 from mgx.models.bid import Bid as Bid
 from mgx.models.bid_envelope import BidEnvelope as BidEnvelope
 from mgx.models.bid_grades_inner import BidGradesInner as BidGradesInner
@@ -151,6 +171,9 @@ from mgx.models.market_price import MarketPrice as MarketPrice
 from mgx.models.market_price_list import MarketPriceList as MarketPriceList
 from mgx.models.market_price_range import MarketPriceRange as MarketPriceRange
 from mgx.models.money import Money as Money
+from mgx.models.oauth_revoke_post200_response import OauthRevokePost200Response as OauthRevokePost200Response
+from mgx.models.oauth_token_post200_response import OauthTokenPost200Response as OauthTokenPost200Response
+from mgx.models.oauth_token_post400_response import OauthTokenPost400Response as OauthTokenPost400Response
 from mgx.models.page import Page as Page
 from mgx.models.place_bid import PlaceBid as PlaceBid
 from mgx.models.place_bid_bids_inner import PlaceBidBidsInner as PlaceBidBidsInner
@@ -161,6 +184,7 @@ from mgx.models.price_history import PriceHistory as PriceHistory
 from mgx.models.price_history_points_inner import PriceHistoryPointsInner as PriceHistoryPointsInner
 from mgx.models.quality import Quality as Quality
 from mgx.models.quantity import Quantity as Quantity
+from mgx.models.request_analysis import RequestAnalysis as RequestAnalysis
 from mgx.models.store_cash_bid import StoreCashBid as StoreCashBid
 from mgx.models.store_cash_bid_delivery import StoreCashBidDelivery as StoreCashBidDelivery
 from mgx.models.store_farm import StoreFarm as StoreFarm

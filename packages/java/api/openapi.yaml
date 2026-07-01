@@ -31,6 +31,9 @@ tags:
   name: Teams
 - description: Manage the elevator's own cash bids and their offers.
   name: Cash Bids
+- description: "Request grain sample analysis (graded by SGS) on inventory you own\
+    \ or manage, and read results."
+  name: Analysis
 - description: Subscribe to event notifications and inspect deliveries.
   name: Webhooks
 paths:
@@ -1582,6 +1585,189 @@ paths:
       x-content-type: application/json
       x-accepts:
       - application/json
+  /oauth/token:
+    post:
+      description: "Exchange credentials for an access token. Use `grant_type=authorization_code`\
+        \ to complete the Login with MGX flow, `grant_type=client_credentials` for\
+        \ machine-to-machine read-only access, or `grant_type=refresh_token` to obtain\
+        \ a new access token (and a rotated refresh token) before the current one\
+        \ expires. Access tokens live 15 days; refresh tokens live 30 days. This endpoint\
+        \ is unauthenticated — the client credentials are supplied in the body."
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/_oauth_token_post_request"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/_oauth_token_post_200_response"
+          description: "A new access token. For authorization code and refresh grants,\
+            \ a rotated `refresh_token` is also returned; store it for the next refresh."
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/_oauth_token_post_400_response"
+          description: "Invalid, expired, or already-used grant (e.g. a refresh token\
+            \ past its 30-day lifetime)."
+        "401":
+          description: Client authentication failed (bad `client_id`/`client_secret`).
+      security: []
+      summary: Issue or refresh an access token
+      tags:
+      - Authentication
+      x-content-type: application/x-www-form-urlencoded
+      x-accepts:
+      - application/json
+    servers:
+    - description: Production
+      url: https://api.mygrainexchange.com
+    - description: Local (Herd)
+      url: https://dashboard.mgx.test/api
+  /oauth/revoke:
+    post:
+      description: "Invalidate a token early — for example on logout or when rotating\
+        \ credentials. Pass `token_type_hint=refresh_token` to also revoke the refresh\
+        \ tokens associated with the access token, preventing further refreshes."
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/_oauth_revoke_post_request"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/_oauth_revoke_post_200_response"
+          description: Token revoked.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      summary: Revoke an access or refresh token
+      tags:
+      - Authentication
+      x-content-type: application/x-www-form-urlencoded
+      x-accepts:
+      - application/json
+    servers:
+    - description: Production
+      url: https://api.mygrainexchange.com
+    - description: Local (Herd)
+      url: https://dashboard.mgx.test/api
+  /analysis-types:
+    get:
+      description: Grading offerings and pricing. Samples are graded by SGS; MGX orchestrates
+        and bills. Partner clients see the wholesale price.
+      operationId: analysisTypes
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisTypeList"
+          description: Analysis offerings
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+      security:
+      - oauth2:
+        - analysis.read
+      summary: List grain sample analysis offerings
+      tags:
+      - Analysis
+      x-accepts:
+      - application/json
+  /me/inventory/{id}/analysis:
+    get:
+      operationId: analysisGet
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisEnvelope"
+          description: Analysis status/result
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - oauth2:
+        - analysis.read
+      summary: Get the analysis status and result for an inventory
+      tags:
+      - Analysis
+      x-accepts:
+      - application/json
+    post:
+      description: "Requests SGS grading on inventory you own (self-billed) or a seller\
+        \ your team manages (partner-billed). Emits analysis.requested, then analysis.sample_received,\
+        \ analysis.graded, analysis.photo_added."
+      operationId: analysisRequest
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestAnalysis"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisEnvelope"
+          description: Analysis requested
+        "402":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Payment failed
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Analysis already requested for this inventory
+        "422":
+          $ref: "#/components/responses/ValidationError"
+      security:
+      - oauth2:
+        - analysis.write
+      summary: Request analysis on an inventory
+      tags:
+      - Analysis
+      x-content-type: application/json
+      x-accepts:
+      - application/json
 components:
   parameters:
     UnitsParam:
@@ -2854,6 +3040,10 @@ components:
             - trade.settled
             - cashbid.offer_received
             - inventory.matched
+            - analysis.requested
+            - analysis.sample_received
+            - analysis.graded
+            - analysis.photo_added
             type: string
           type: array
       required:
@@ -3142,6 +3332,140 @@ components:
           - kg
           type: string
       type: object
+    Analysis:
+      example:
+        reference: MGX-000123
+        result:
+          dockage: 5.962133916683182
+          color: color
+          grade: grade
+          protein: 0.8008281904610115
+          test_weight: 1.4658129805029452
+          sample_date: sample_date
+          comment: comment
+          moisture: 6.027456183070403
+        requested: true
+        inventory_id: inventory_id
+        grade: grade
+        photos:
+        - description: description
+          url: https://openapi-generator.tech
+        - description: description
+          url: https://openapi-generator.tech
+        status: pending
+        requested_at: 2000-01-23T04:56:07.000+00:00
+      properties:
+        inventory_id:
+          type: string
+        reference:
+          example: MGX-000123
+          type: string
+        status:
+          enum:
+          - pending
+          - graded
+          type: string
+        requested:
+          type: boolean
+        requested_at:
+          format: date-time
+          nullable: true
+          type: string
+        grade:
+          nullable: true
+          type: string
+        result:
+          $ref: "#/components/schemas/Analysis_result"
+        photos:
+          description: Approved (buyer-visible) sample photos.
+          items:
+            $ref: "#/components/schemas/Analysis_photos_inner"
+          type: array
+      type: object
+    AnalysisType:
+      example:
+        price: 6.027456183070403
+        name: name
+        description: description
+        currency: CAD
+        id: 0
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          nullable: true
+          type: string
+        price:
+          description: Price in the currency below. Partner clients see the wholesale
+            partner price.
+          type: number
+        currency:
+          example: CAD
+          type: string
+      type: object
+    RequestAnalysis:
+      example:
+        analysis_types:
+        - 0
+        - 0
+      properties:
+        analysis_types:
+          description: "IDs of the analysis offerings to run, from GET /analysis-types."
+          items:
+            type: integer
+          minItems: 1
+          type: array
+      required:
+      - analysis_types
+      type: object
+    AnalysisEnvelope:
+      example:
+        data:
+          reference: MGX-000123
+          result:
+            dockage: 5.962133916683182
+            color: color
+            grade: grade
+            protein: 0.8008281904610115
+            test_weight: 1.4658129805029452
+            sample_date: sample_date
+            comment: comment
+            moisture: 6.027456183070403
+          requested: true
+          inventory_id: inventory_id
+          grade: grade
+          photos:
+          - description: description
+            url: https://openapi-generator.tech
+          - description: description
+            url: https://openapi-generator.tech
+          status: pending
+          requested_at: 2000-01-23T04:56:07.000+00:00
+      properties:
+        data:
+          $ref: "#/components/schemas/Analysis"
+      type: object
+    AnalysisTypeList:
+      example:
+        items:
+        - price: 6.027456183070403
+          name: name
+          description: description
+          currency: CAD
+          id: 0
+        - price: 6.027456183070403
+          name: name
+          description: description
+          currency: CAD
+          id: 0
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/AnalysisType"
+          type: array
+      type: object
     _delivery_locations_get_200_response_items_inner:
       example:
         province: province
@@ -3179,6 +3503,110 @@ components:
           items:
             $ref: "#/components/schemas/_delivery_locations_get_200_response_items_inner"
           type: array
+      type: object
+    _oauth_token_post_request:
+      properties:
+        grant_type:
+          description: The OAuth2 grant type.
+          enum:
+          - authorization_code
+          - client_credentials
+          - refresh_token
+          type: string
+        client_id:
+          example: 01988a76-1190-7010-a07c-2ed909d58f78
+          type: string
+        client_secret:
+          description: Required for confidential clients.
+          example: your-client-secret
+          type: string
+        refresh_token:
+          description: Required when `grant_type=refresh_token`. The refresh token
+            returned by a previous token response.
+          example: def50200a1b2c3...
+          type: string
+        code:
+          description: Required when `grant_type=authorization_code`. The authorization
+            code returned to your redirect URI.
+          type: string
+        redirect_uri:
+          description: Required when `grant_type=authorization_code`. Must match the
+            client's registered redirect URI.
+          type: string
+        code_verifier:
+          description: The PKCE code verifier matching the `code_challenge` sent to
+            the authorize endpoint.
+          type: string
+        scope:
+          description: "Space-delimited list of scopes. For a refresh, may be a subset\
+            \ of the originally granted scopes."
+          example: inventory.read bids.read
+          type: string
+      required:
+      - client_id
+      - client_secret
+      - grant_type
+      type: object
+    _oauth_token_post_200_response:
+      example:
+        access_token: eyJ0eXAiOiJKV1QiLCJhbGc...
+        refresh_token: def50200a1b2c3...
+        token_type: Bearer
+        expires_in: 1296000
+      properties:
+        token_type:
+          example: Bearer
+          type: string
+        expires_in:
+          description: Access token lifetime in seconds (15 days).
+          example: 1296000
+          type: integer
+        access_token:
+          example: eyJ0eXAiOiJKV1QiLCJhbGc...
+          type: string
+        refresh_token:
+          description: Omitted for the client_credentials grant.
+          example: def50200a1b2c3...
+          type: string
+      type: object
+    _oauth_token_post_400_response:
+      example:
+        error_description: The refresh token is invalid.
+        error: invalid_grant
+      properties:
+        error:
+          example: invalid_grant
+          type: string
+        error_description:
+          example: The refresh token is invalid.
+          type: string
+      type: object
+    _oauth_revoke_post_request:
+      properties:
+        token:
+          description: The token to revoke.
+          example: eyJ0eXAiOiJKV1QiLCJhbGc...
+          type: string
+        token_type_hint:
+          description: Hint for which token type is being revoked.
+          enum:
+          - access_token
+          - refresh_token
+          type: string
+      required:
+      - token
+      type: object
+    _oauth_revoke_post_200_response:
+      example:
+        success: true
+        message: Token revoked successfully
+      properties:
+        success:
+          example: true
+          type: boolean
+        message:
+          example: Token revoked successfully
+          type: string
       type: object
     Error_error_errors_inner:
       example:
@@ -3337,6 +3765,48 @@ components:
         falling_number:
           type: integer
       type: object
+    Analysis_result:
+      description: Null until grading is finalized.
+      example:
+        dockage: 5.962133916683182
+        color: color
+        grade: grade
+        protein: 0.8008281904610115
+        test_weight: 1.4658129805029452
+        sample_date: sample_date
+        comment: comment
+        moisture: 6.027456183070403
+      nullable: true
+      properties:
+        grade:
+          type: string
+        protein:
+          type: number
+        moisture:
+          type: number
+        test_weight:
+          type: number
+        dockage:
+          type: number
+        color:
+          type: string
+        comment:
+          type: string
+        sample_date:
+          type: string
+      type: object
+    Analysis_photos_inner:
+      example:
+        description: description
+        url: https://openapi-generator.tech
+      properties:
+        url:
+          format: uri
+          type: string
+        description:
+          nullable: true
+          type: string
+      type: object
   securitySchemes:
     oauth2:
       description: Login with MGX (authorization code + PKCE) for user-context scopes;
@@ -3364,6 +3834,9 @@ components:
             farms.read: See your farm names and locations
             farms.write: Create and edit your farms
             locations.read: Read your elevator delivery locations
+            analysis.read: Read grain sample analysis offerings and graded results
+            analysis.write: Request grain sample analysis on inventory you own or
+              manage
           tokenUrl: https://api.mygrainexchange.com/oauth/token
         clientCredentials:
           scopes:

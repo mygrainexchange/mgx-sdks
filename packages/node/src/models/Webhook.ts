@@ -44,7 +44,11 @@ export const WebhookEventsEnum = {
     trade_created: 'trade.created',
     trade_settled: 'trade.settled',
     cashbid_offer_received: 'cashbid.offer_received',
-    inventory_matched: 'inventory.matched'
+    inventory_matched: 'inventory.matched',
+    analysis_requested: 'analysis.requested',
+    analysis_sample_received: 'analysis.sample_received',
+    analysis_graded: 'analysis.graded',
+    analysis_photo_added: 'analysis.photo_added'
 } as const;
 export type WebhookEventsEnum = typeof WebhookEventsEnum[keyof typeof WebhookEventsEnum];
 

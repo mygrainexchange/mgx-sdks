@@ -75,7 +75,15 @@ public class Webhook {
     
     CASHBID_OFFER_RECEIVED("cashbid.offer_received"),
     
-    INVENTORY_MATCHED("inventory.matched");
+    INVENTORY_MATCHED("inventory.matched"),
+    
+    ANALYSIS_REQUESTED("analysis.requested"),
+    
+    ANALYSIS_SAMPLE_RECEIVED("analysis.sample_received"),
+    
+    ANALYSIS_GRADED("analysis.graded"),
+    
+    ANALYSIS_PHOTO_ADDED("analysis.photo_added");
 
     private String value;
 

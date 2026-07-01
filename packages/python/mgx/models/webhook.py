@@ -34,8 +34,8 @@ class Webhook(BaseModel):
     def events_validate_enum(cls, value):
         """Validates the enum"""
         for i in value:
-            if i not in set(['bid.accepted', 'bid.rejected', 'bid.countered', 'trade.created', 'trade.settled', 'cashbid.offer_received', 'inventory.matched']):
-                raise ValueError("each list item must be one of ('bid.accepted', 'bid.rejected', 'bid.countered', 'trade.created', 'trade.settled', 'cashbid.offer_received', 'inventory.matched')")
+            if i not in set(['bid.accepted', 'bid.rejected', 'bid.countered', 'trade.created', 'trade.settled', 'cashbid.offer_received', 'inventory.matched', 'analysis.requested', 'analysis.sample_received', 'analysis.graded', 'analysis.photo_added']):
+                raise ValueError("each list item must be one of ('bid.accepted', 'bid.rejected', 'bid.countered', 'trade.created', 'trade.settled', 'cashbid.offer_received', 'inventory.matched', 'analysis.requested', 'analysis.sample_received', 'analysis.graded', 'analysis.photo_added')")
         return value
 
     model_config = ConfigDict(

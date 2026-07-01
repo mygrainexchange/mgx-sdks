@@ -14,6 +14,12 @@
 
 
 # import models into model package
+from mgx.models.analysis import Analysis
+from mgx.models.analysis_envelope import AnalysisEnvelope
+from mgx.models.analysis_photos_inner import AnalysisPhotosInner
+from mgx.models.analysis_result import AnalysisResult
+from mgx.models.analysis_type import AnalysisType
+from mgx.models.analysis_type_list import AnalysisTypeList
 from mgx.models.bid import Bid
 from mgx.models.bid_envelope import BidEnvelope
 from mgx.models.bid_grades_inner import BidGradesInner
@@ -45,6 +51,9 @@ from mgx.models.market_price import MarketPrice
 from mgx.models.market_price_list import MarketPriceList
 from mgx.models.market_price_range import MarketPriceRange
 from mgx.models.money import Money
+from mgx.models.oauth_revoke_post200_response import OauthRevokePost200Response
+from mgx.models.oauth_token_post200_response import OauthTokenPost200Response
+from mgx.models.oauth_token_post400_response import OauthTokenPost400Response
 from mgx.models.page import Page
 from mgx.models.place_bid import PlaceBid
 from mgx.models.place_bid_bids_inner import PlaceBidBidsInner
@@ -55,6 +64,7 @@ from mgx.models.price_history import PriceHistory
 from mgx.models.price_history_points_inner import PriceHistoryPointsInner
 from mgx.models.quality import Quality
 from mgx.models.quantity import Quantity
+from mgx.models.request_analysis import RequestAnalysis
 from mgx.models.store_cash_bid import StoreCashBid
 from mgx.models.store_cash_bid_delivery import StoreCashBidDelivery
 from mgx.models.store_farm import StoreFarm

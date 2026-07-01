@@ -96,6 +96,12 @@ public class JSON {
         gsonBuilder.registerTypeAdapter(OffsetDateTime.class, offsetDateTimeTypeAdapter);
         gsonBuilder.registerTypeAdapter(LocalDate.class, localDateTypeAdapter);
         gsonBuilder.registerTypeAdapter(byte[].class, byteArrayAdapter);
+        gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.Analysis.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.AnalysisEnvelope.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.AnalysisPhotosInner.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.AnalysisResult.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.AnalysisType.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.AnalysisTypeList.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.Bid.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.BidEnvelope.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.BidGradesInner.CustomTypeAdapterFactory());
@@ -127,6 +133,9 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.MarketPriceList.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.MarketPriceRange.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.Money.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.OauthRevokePost200Response.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.OauthTokenPost200Response.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.OauthTokenPost400Response.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.Page.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.PlaceBid.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.PlaceBidBidsInner.CustomTypeAdapterFactory());
@@ -137,6 +146,7 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.PriceHistoryPointsInner.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.Quality.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.Quantity.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.RequestAnalysis.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.StoreCashBid.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.StoreCashBidDelivery.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.mygrainexchange.mgx.model.StoreFarm.CustomTypeAdapterFactory());

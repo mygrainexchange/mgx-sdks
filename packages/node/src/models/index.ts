@@ -1,5 +1,11 @@
 /* tslint:disable */
 /* eslint-disable */
+export * from './Analysis';
+export * from './AnalysisEnvelope';
+export * from './AnalysisPhotosInner';
+export * from './AnalysisResult';
+export * from './AnalysisType';
+export * from './AnalysisTypeList';
 export * from './Bid';
 export * from './BidEnvelope';
 export * from './BidGradesInner';
@@ -31,6 +37,9 @@ export * from './MarketPriceList';
 export * from './MarketPriceRange';
 export * from './ModelError';
 export * from './Money';
+export * from './OauthRevokePost200Response';
+export * from './OauthTokenPost200Response';
+export * from './OauthTokenPost400Response';
 export * from './Page';
 export * from './PlaceBid';
 export * from './PlaceBidBidsInner';
@@ -41,6 +50,7 @@ export * from './PriceHistory';
 export * from './PriceHistoryPointsInner';
 export * from './Quality';
 export * from './Quantity';
+export * from './RequestAnalysis';
 export * from './StoreCashBid';
 export * from './StoreCashBidDelivery';
 export * from './StoreFarm';

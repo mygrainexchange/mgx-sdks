@@ -139,6 +139,44 @@ namespace MyGrainExchange.Api.Client
             };
             OperationServers = new Dictionary<string, List<IReadOnlyDictionary<string, object>>>()
             {
+                {
+                    "AuthenticationApi.OauthRevokePost", new List<IReadOnlyDictionary<string, object>>
+                    {
+                        {
+                            new Dictionary<string, object>
+                            {
+                                {"url", "https://api.mygrainexchange.com"},
+                                {"description", "Production"}
+                            }
+                        },
+                        {
+                            new Dictionary<string, object>
+                            {
+                                {"url", "https://dashboard.mgx.test/api"},
+                                {"description", "Local (Herd)"}
+                            }
+                        },
+                    }
+                },
+                {
+                    "AuthenticationApi.OauthTokenPost", new List<IReadOnlyDictionary<string, object>>
+                    {
+                        {
+                            new Dictionary<string, object>
+                            {
+                                {"url", "https://api.mygrainexchange.com"},
+                                {"description", "Production"}
+                            }
+                        },
+                        {
+                            new Dictionary<string, object>
+                            {
+                                {"url", "https://dashboard.mgx.test/api"},
+                                {"description", "Local (Herd)"}
+                            }
+                        },
+                    }
+                },
             };
 
             // Setting Timeout has side effects (forces ApiClient creation).

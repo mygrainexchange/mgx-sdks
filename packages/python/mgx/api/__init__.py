@@ -1,6 +1,8 @@
 # flake8: noqa
 
 # import apis into api package
+from mgx.api.analysis_api import AnalysisApi
+from mgx.api.authentication_api import AuthenticationApi
 from mgx.api.bids_api import BidsApi
 from mgx.api.cash_bids_api import CashBidsApi
 from mgx.api.inventory_api import InventoryApi

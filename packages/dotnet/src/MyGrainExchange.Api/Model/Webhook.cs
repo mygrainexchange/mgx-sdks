@@ -78,7 +78,31 @@ namespace MyGrainExchange.Api.Model
             /// Enum InventoryMatched for value: inventory.matched
             /// </summary>
             [EnumMember(Value = "inventory.matched")]
-            InventoryMatched = 7
+            InventoryMatched = 7,
+
+            /// <summary>
+            /// Enum AnalysisRequested for value: analysis.requested
+            /// </summary>
+            [EnumMember(Value = "analysis.requested")]
+            AnalysisRequested = 8,
+
+            /// <summary>
+            /// Enum AnalysisSampleReceived for value: analysis.sample_received
+            /// </summary>
+            [EnumMember(Value = "analysis.sample_received")]
+            AnalysisSampleReceived = 9,
+
+            /// <summary>
+            /// Enum AnalysisGraded for value: analysis.graded
+            /// </summary>
+            [EnumMember(Value = "analysis.graded")]
+            AnalysisGraded = 10,
+
+            /// <summary>
+            /// Enum AnalysisPhotoAdded for value: analysis.photo_added
+            /// </summary>
+            [EnumMember(Value = "analysis.photo_added")]
+            AnalysisPhotoAdded = 11
         }
 
         /// <summary>

@@ -1,5 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
+export * from './AnalysisApi';
+export * from './AuthenticationApi';
 export * from './BidsApi';
 export * from './CashBidsApi';
 export * from './InventoryApi';

@@ -1,6 +1,6 @@
 lazy val root = (project in file(".")).
   settings(
-    organization := "com.mygrainexchange",
+    organization := "io.github.mygrainexchange",
     name := "mgx-sdk",
     version := "1.0.0",
     scalaVersion := "2.11.12",

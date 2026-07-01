@@ -241,6 +241,10 @@ class Webhook implements ModelInterface, ArrayAccess, \JsonSerializable
     public const EVENTS_TRADE_SETTLED = 'trade.settled';
     public const EVENTS_CASHBID_OFFER_RECEIVED = 'cashbid.offer_received';
     public const EVENTS_INVENTORY_MATCHED = 'inventory.matched';
+    public const EVENTS_ANALYSIS_REQUESTED = 'analysis.requested';
+    public const EVENTS_ANALYSIS_SAMPLE_RECEIVED = 'analysis.sample_received';
+    public const EVENTS_ANALYSIS_GRADED = 'analysis.graded';
+    public const EVENTS_ANALYSIS_PHOTO_ADDED = 'analysis.photo_added';
 
     /**
      * Gets allowable values of the enum
@@ -257,6 +261,10 @@ class Webhook implements ModelInterface, ArrayAccess, \JsonSerializable
             self::EVENTS_TRADE_SETTLED,
             self::EVENTS_CASHBID_OFFER_RECEIVED,
             self::EVENTS_INVENTORY_MATCHED,
+            self::EVENTS_ANALYSIS_REQUESTED,
+            self::EVENTS_ANALYSIS_SAMPLE_RECEIVED,
+            self::EVENTS_ANALYSIS_GRADED,
+            self::EVENTS_ANALYSIS_PHOTO_ADDED,
         ];
     }
 
